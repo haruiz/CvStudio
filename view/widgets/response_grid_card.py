@@ -86,6 +86,10 @@ class GridCard(QFrame, QObject):
         self._body_frame.layout().addWidget(value)
 
     @property
+    def body_frame(self):
+        return self._body_frame
+
+    @property
     def label(self):
         return  self._title_widget.text()
 

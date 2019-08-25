@@ -1,4 +1,5 @@
 import math
+import os
 import time
 import numpy as np
 import cv2
@@ -9,104 +10,19 @@ from PyQt5.QtGui import QDropEvent,QPixmap,QImage
 from PyQt5.QtWidgets import QScrollArea,QFrame,QVBoxLayout,QLabel,QWidget,QGridLayout,QHBoxLayout
 
 from util import Worker,GUIUtilities
+from .response_grid_card import GridCard
+from .response_grid import ResponseGridLayout
 from .image_button import ImageButton
 from .loading_dialog import QLoadingDialog
 
-
-class ImageCard(QFrame):
+class ImagesGridWidget(QWidget):
     def __init__(self, parent=None):
-        super(ImageCard, self).__init__(parent)
-        #self.setFrameStyle(QFrame.Box)
-        content_layout = QVBoxLayout()
-        content_layout.setContentsMargins(0,0,0,0)
-        content_layout.setSpacing(0)
-        self.setLayout(content_layout)
-
-        self._image_widget = QLabel()
-        self._image_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-        #self._image_widget.setScaledContents(True)
-        self._image_widget.setStyleSheet("QLabel { background-color : black;}")
-        self._image_widget.setObjectName("image_container")
-
-        self._title_widget = QLabel()
-        self._title_widget.setStyleSheet("QLabel { font-size : 12px;}")
-        self._title_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-        self._title_widget.setScaledContents(True)
-        self._actions_widget = QWidget()
-
-        # layouts
-        image_container = QFrame()
-        #image_container.setFrameStyle(QFrame.Box)
-        image_container.setFixedHeight(200)
-        image_container.setLayout(QVBoxLayout())
-        #image_container.layout().setContentsMargins(2,2,2,2)
-        image_container.layout().addWidget(self._image_widget)
-
-        title_container=QFrame()
-        #title_container.setFrameStyle(QFrame.Box)
-        title_container.setFixedHeight(30)
-        title_container.setLayout(QVBoxLayout())
-        title_container.layout().setContentsMargins(2,2,2,2)
-        title_container.layout().addWidget(self._title_widget)
-
-        actions_container=QFrame()
-        actions_container.setFixedHeight(30)
-        actions_container.setFixedWidth(80)
-        actions_container.setLayout(QHBoxLayout())
-        actions_container.layout().setContentsMargins(0,0,0,0)
-
-        self.btn_delete_action=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
-        self.btn_delete_action.setToolTip("delete")
-        self.btn_edit_action=ImageButton(GUIUtilities.get_icon("edit.png"),size=QSize(15,15))
-        self.btn_delete_action.setToolTip("edit")
-        self.btn_view_action=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
-        self.btn_delete_action.setToolTip("view")
-        actions_container.layout().addWidget(self.btn_delete_action)
-        actions_container.layout().addWidget(self.btn_edit_action)
-        actions_container.layout().addWidget(self.btn_view_action)
-
-        #actions_container.setFrameStyle(QFrame.Box)
-
-        content_layout.addWidget(image_container, alignment=QtCore.Qt.AlignHCenter)
-        content_layout.addWidget(title_container,alignment=QtCore.Qt.AlignHCenter)
-        content_layout.addWidget(actions_container,alignment=QtCore.Qt.AlignHCenter)
-
-    @property
-    def image(self):
-        return self._image_widget
-
-    @image.setter
-    def image(self, value):
-        img: np.ndarray = cv2.imread(value)
-        if isinstance(img, np.ndarray):
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            # img = imutils.resize(img, height=200, width=200)
-            # height,width,_=img.shape
-            # q_img=QImage(img.data,width,height,img.strides[0],QImage.Format_RGB888)
-            # pixmap=QPixmap.fromImage(q_img)
-            # #pixmap = pixmap.scaled(width, height,aspectRatioMode=QtCore.Qt.KeepAspectRatio)
-            # self._image_widget.setPixmap(pixmap)
-            # self._image_widget.setScaledContents(True)
-            pixmap=QPixmap(value)
-            self.label="({0}px / {1}px)".format(pixmap.width(),pixmap.height())
-            pixmap=pixmap.scaled(QSize(200,200),aspectRatioMode=QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation)
-            self._image_widget.setPixmap(pixmap)
-
-    @property
-    def label(self):
-        return  self._title_widget.text()
-
-    @label.setter
-    def label(self, value):
-        self._title_widget.setText(value)
-
-
-class ImagesGridLayout(QGridLayout, QObject):
-
-    def __init__(self, parent=None):
-        super(ImagesGridLayout, self).__init__(parent)
-        self._images = None
-        self._images_by_row = 4
+        super(ImagesGridWidget, self).__init__(parent)
+        self.setAcceptDrops(True)
+        self.grid_layout=ResponseGridLayout()
+        #self.grid_layout.cols = 6
+        self.setLayout(self.grid_layout)
+        self._images=None
 
     @property
     def images(self):
@@ -114,41 +30,8 @@ class ImagesGridLayout(QGridLayout, QObject):
 
     @images.setter
     def images(self,value):
-        self._images = value
+        self._images=value
         self.update()
-
-    @property
-    def images_by_row(self):
-        return self._images_by_row
-
-    @images_by_row.setter
-    def images_by_row(self, value):
-        self._images_by_row = value
-
-    def update(self) -> None:
-        GUIUtilities.clear_layout(self)
-        if self.images and len(self.images) > 0:
-            row=col=0
-            for idx,img in enumerate(self.images):
-                media_card = ImageCard()
-                media_card.image = img
-                #media_card.setFixedHeight(self._preferred_height)
-                self.addWidget(media_card,row,col)
-                self.setColumnStretch(col,1)
-                self.setRowStretch(row,1)
-                col += 1
-                if col%self.images_by_row == 0:
-                    row+= 1
-                    col = 0
-        super(ImagesGridLayout, self).update()
-
-
-class ImagesGridWidget(QWidget):
-    def __init__(self, parent=None):
-        super(ImagesGridWidget, self).__init__(parent)
-        self.setAcceptDrops(True)
-        self.setLayout(ImagesGridLayout())
-
 
     def dragEnterEvent(self,event):
         m=event.mimeData()
@@ -180,13 +63,42 @@ class ImagesGridWidget(QWidget):
                     info=QFileInfo(path)
                     paths.append(info.absoluteFilePath())
                 paths=sorted(paths)
-                self.import_images(paths)
+                self.images = paths
 
-    def import_images(self, images: []):
-        images_grid_layout = self.layout()
-        images_grid_layout.images_by_row=5
-        images_grid_layout.images = images
+    def new_image_card_factory(self,image_path: str):
+        _, ext = os.path.splitext(image_path)
+        if ext == ".jpg":
+            card_widget: GridCard=GridCard()
+            card_widget.setFixedHeight(200)
+            btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
+            btn_edit=ImageButton(GUIUtilities.get_icon("annotations.png"),size=QSize(15,15))
+            btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
+            card_widget.add_buttons([btn_delete,btn_edit,btn_view])
 
+            pixmap=QPixmap(image_path)
+            pixmap=pixmap.scaled(QSize(150,150),aspectRatioMode=QtCore.Qt.KeepAspectRatio,transformMode=QtCore.Qt.SmoothTransformation)
+            card_widget.label="({0}px / {1}px)".format(pixmap.width(),pixmap.height())
+
+            image_widget=QLabel()
+            image_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
+            #image_widget.setScaledContents(True)
+            image_widget.setStyleSheet("QLabel { background-color : black;}")
+
+            image_widget.setPixmap(pixmap)
+            card_widget.body=image_widget
+            card_widget.body_frame.setObjectName("image_card")
+
+            return card_widget
+        return None
+
+    def update(self) -> None:
+        list_widgets = []
+        for img in self.images:
+            card = self.new_image_card_factory(img)
+            if card:
+                list_widgets.append(card)
+        self.grid_layout.widgets = list_widgets
+        super(ImagesGridWidget, self).update()
 
 class MediaTabWidget(QScrollArea):
     def __init__(self, parent=None):

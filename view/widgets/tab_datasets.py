@@ -1,11 +1,12 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool,QSize,QObject,pyqtSignal
-from PyQt5.QtWidgets import QScrollArea,QWidget,QFrame,QListWidget,QMessageBox,QDialog
+from PyQt5.QtWidgets import QScrollArea,QWidget,QFrame,QListWidget,QMessageBox,QDialog,QTabWidget
 
 from dao.dataset_dao import DatasetDao
 from decor import gui_exception,work_exception
 from util import GUIUtilities,Worker
 from view.forms import DatasetForm
+from .tab_media import MediaTabWidget
 from vo import DatasetVO
 from .response_grid_card import GridCard
 from .loading_dialog import QLoadingDialog
@@ -16,6 +17,8 @@ from .image_button import ImageButton
 class DatasetGridWidget(QWidget,QObject):
     new_dataset_action_signal = pyqtSignal()
     delete_dataset_action_signal=pyqtSignal(DatasetVO)
+    open_dataset_action_signal = pyqtSignal(DatasetVO)
+
     def __init__(self, parent=None):
         super(DatasetGridWidget, self).__init__(parent)
         self.grid_layout = ResponseGridLayout()
@@ -38,11 +41,12 @@ class DatasetGridWidget(QWidget,QObject):
         btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
         btn_edit=ImageButton(GUIUtilities.get_icon("edit.png"),size=QSize(15,15))
         btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
-        btn_delete.clicked.connect(lambda evt: self.delete_dataset_on_click(ds))
+        btn_delete.clicked.connect(lambda evt: self.open_dataset_on_click(ds))
         card_widget.add_buttons([btn_delete,btn_edit,btn_view])
         icon_file = "images_folder.png" if ds.data_type == "Images" else "videos_folder.png"
         icon = GUIUtilities.get_icon(icon_file)
         card_widget.body=ImageButton(icon)
+        card_widget.body.doubleClicked.connect(lambda evt: self.btn_view_dataset_on_double_click(ds))
         return card_widget
 
     def new_ds_button_factory(self):
@@ -68,6 +72,9 @@ class DatasetGridWidget(QWidget,QObject):
     def delete_dataset_on_click(self, vo: DatasetVO):
         self.delete_dataset_action_signal.emit(vo)
 
+    def btn_view_dataset_on_double_click(self,vo: DatasetVO):
+        self.open_dataset_action_signal.emit(vo)
+
 
 
 class DatasetTabWidget(QScrollArea):
@@ -77,8 +84,9 @@ class DatasetTabWidget(QScrollArea):
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.central_widget=DatasetGridWidget()
-        self.central_widget.new_dataset_action_signal.connect(self.btn_new_dataset_on_click)
-        self.central_widget.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_click)
+        self.central_widget.new_dataset_action_signal.connect(self.btn_new_dataset_on_slot)
+        self.central_widget.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_slot)
+        self.central_widget.open_dataset_action_signal.connect(self.open_dataset_action_slot)
         self.setWidget(self.central_widget)
         self.setWidgetResizable(True)
         self.thread_pool=QThreadPool()
@@ -113,7 +121,7 @@ class DatasetTabWidget(QScrollArea):
 
     @QtCore.pyqtSlot()
     @gui_exception
-    def btn_new_dataset_on_click(self):
+    def btn_new_dataset_on_slot(self):
         form=DatasetForm()
         if form.exec_() == QDialog.Accepted:
             vo : DatasetVO = form.value
@@ -122,21 +130,20 @@ class DatasetTabWidget(QScrollArea):
 
     @QtCore.pyqtSlot(DatasetVO)
     @gui_exception
-    def btn_delete_dataset_on_click(self, vo: DatasetVO):
+    def btn_delete_dataset_on_slot(self,vo: DatasetVO):
         self.ds_dao.delete(vo.id)
         self.load()
-    #
-    # @QtCore.pyqtSlot(QObject)
-    # def view_btn_card_action_slot(self,sender: DataSetTabWidgetCard):
-    #     ds_id=sender.vo.id
-    #     tab_widget = MediaTabWidget()
-    #     tab_widget_manager: QTabWidget = self.window().tab_widget_manager
-    #     for i in range(tab_widget_manager.count()):
-    #         curr_tab_widget = tab_widget_manager.widget(i)
-    #         if isinstance(curr_tab_widget, MediaTabWidget):
-    #             tab_widget_manager.removeTab(i)
-    #     tab_widget_manager.addTab(tab_widget,sender.vo.name)
-    #     tab_widget_manager.setCurrentIndex(1)
+
+    @QtCore.pyqtSlot(DatasetVO)
+    def open_dataset_action_slot(self,vo: DatasetVO):
+        tab_widget = MediaTabWidget()
+        tab_widget_manager: QTabWidget = self.window().tab_widget_manager
+        for i in range(tab_widget_manager.count()):
+            curr_tab_widget = tab_widget_manager.widget(i)
+            if isinstance(curr_tab_widget, MediaTabWidget):
+                tab_widget_manager.removeTab(i)
+        tab_widget_manager.addTab(tab_widget,vo.name)
+        tab_widget_manager.setCurrentIndex(1)
 
 
 

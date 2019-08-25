@@ -21,7 +21,6 @@ class ImageButton(QPushButton, QObject):
         self.setGraphicsEffect(shadow)
 
     def mouseDoubleClickEvent(self, evt: QtGui.QMouseEvent) -> None:
-        print("test")
         self.doubleClicked.emit(evt)
 
 

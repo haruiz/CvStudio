@@ -51,6 +51,19 @@ QFrame#image_container:hover{
     border-radius: 8px
 }
 
+QFrame#image_card{
+    background-color: black;
+    border-width: 1px;
+    border-radius: 8px
+
+}
+QFrame#image_card:hover{
+    background-color: #ffd0bf;
+    border-width: 1px;
+    border-radius: 8px;
+}
+
+
 QFrame#card_actions_widget:hover{
     background-color: dimgray;
     /*border-style: outset;*/
