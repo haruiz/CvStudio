@@ -1,0 +1,85 @@
+*{
+    font-family: Roboto, Verdana, Arial, Helvetica, Sans-Serif;
+    font-size: 16px;
+}
+
+QLabel {
+    color : darkgray;
+}
+
+QToolTip {
+    border: 2px solid black;
+    border-radius: 40px;
+    padding: 4px;
+}
+
+QPushButton#lateral_menu_button:hover {
+    /*background-color: darkgray;*/
+    border-style: outset;
+    border-width: 2px;
+    border-radius: 10px;
+    border-color: beige;
+    padding: 6px;
+}
+
+QFrame#frame_lateral_bar {
+    /*background-color: black;*/
+}
+
+QFrame#clickable_frame:hover{
+    background-color: dimgray;
+    border-style: outset;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: dimgray;
+}
+
+QFrame#card_frame{
+    border-style: outset;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: dimgray;
+}
+
+QFrame#image_container{
+
+
+}
+QFrame#image_container:hover{
+    background-color: whitesmoke;
+    border-width: 1px;
+    border-radius: 8px
+}
+
+QFrame#card_actions_widget:hover{
+    background-color: dimgray;
+    /*border-style: outset;*/
+    /*border-width: 1px;*/
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-color: dimgray;
+}
+
+
+QFrame#clickable_frame{
+    border-style: outset;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: dimgray;
+}
+
+
+QDockWidget:title {
+    height: 40px;
+    color: white;
+    background-color:#EF4A28;
+    font-size: 12px;
+}
+
+QFrame#top_bar {
+    background-color: gainsboro;
+    border: 1px solid gainsboro;
+}
+
+
+
