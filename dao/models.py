@@ -12,14 +12,54 @@ class BaseModel(Model):
     class Meta:
         database = db
 
+
 class DatasetEntity(BaseModel):
     name = CharField()
     description = TextField()
     folder = TextField()
     date = DateField()
     data_type = CharField()
+    class Meta:
+        table_name='dataset'
+
+
+class DatasetEntryEntity(BaseModel):
+    file_path=CharField()
+    file_size=CharField()
+    dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
+    class Meta:
+        table_name='media'
+
+class LabelEntity(BaseModel):
+    name = CharField()
+    description = CharField(null=True)
+    color = CharField(null=None)
+    dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
+    class Meta:
+        table_name='label'
+
+class HubEntity(BaseModel):
+    path = CharField(unique=True)
+    author = CharField(null=True)
+    class Meta:
+        table_name='hub'
+
+class HubModelEntity(BaseModel):
+    name = CharField(unique=True)
+    description = CharField(null=True)
+    hub= ForeignKeyField(HubEntity)
+    class Meta:
+        table_name='hub_model'
 
 
 def create_tables():
     with db:
-        db.create_tables([DatasetEntity])
+        models = [
+            DatasetEntity,
+            HubEntity,
+            HubModelEntity,
+            DatasetEntryEntity,
+            LabelEntity
+        ]
+        db.drop_tables(models)
+        db.create_tables(models)

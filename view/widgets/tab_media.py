@@ -1,126 +1,78 @@
-import math
 import os
 import time
-import numpy as np
-import cv2
-import imutils
-from PyQt5 import QtCore
-from PyQt5.QtCore import QThreadPool,QModelIndex,QFileInfo,QObject,QSize
-from PyQt5.QtGui import QDropEvent,QPixmap,QImage
-from PyQt5.QtWidgets import QScrollArea,QFrame,QVBoxLayout,QLabel,QWidget,QGridLayout,QHBoxLayout
 
-from util import Worker,GUIUtilities
-from .response_grid_card import GridCard
-from .response_grid import ResponseGridLayout
-from .image_button import ImageButton
+from PyQt5 import QtCore
+from PyQt5.QtCore import QThreadPool,pyqtSlot,QThread
+from PyQt5.QtWidgets import QScrollArea,QTabWidget,QWidget,QVBoxLayout
+
+import vo
+from dao import DatasetDao
+from decor import gui_exception
+from util import Worker
+from view.widgets.gallery.card import GalleryCard
+from view.widgets.image_viewer import ImageViewer
+from view.widgets.image_viewer.image_viewer import ImageViewerWidget
+from vo import DatasetEntryVO
+from .gallery import Gallery
 from .loading_dialog import QLoadingDialog
 
-class ImagesGridWidget(QWidget):
-    def __init__(self, parent=None):
-        super(ImagesGridWidget, self).__init__(parent)
-        self.setAcceptDrops(True)
-        self.grid_layout=ResponseGridLayout()
-        #self.grid_layout.cols = 6
-        self.setLayout(self.grid_layout)
-        self._images=None
 
-    @property
-    def images(self):
-        return self._images
-
-    @images.setter
-    def images(self,value):
-        self._images=value
-        self.update()
-
-    def dragEnterEvent(self,event):
-        m=event.mimeData()
-        if m.hasUrls():
-            if any(url.isLocalFile() for url in m.urls()):
-                event.accept()
-                return
-        else:
-            event.ignore()
-
-    def dragMoveEvent(self,event):
-        if event.mimeData().hasUrls:
-            event.setDropAction(QtCore.Qt.CopyAction)
-            event.accept()
-            return
-        else:
-            event.ignore()
-
-    def dropEvent(self,event: QDropEvent):
-        if event.source():
-            QFrame.dropEvent(self,event)
-        else:
-            m = event.mimeData()
-            if m.hasUrls():
-                url_locals = [url for url in m.urls() if url.isLocalFile()]
-                paths = []
-                for urlLocal in url_locals:
-                    path=urlLocal.toLocalFile()
-                    info=QFileInfo(path)
-                    paths.append(info.absoluteFilePath())
-                paths=sorted(paths)
-                self.images = paths
-
-    def new_image_card_factory(self,image_path: str):
-        _, ext = os.path.splitext(image_path)
-        if ext == ".jpg":
-            card_widget: GridCard=GridCard()
-            card_widget.setFixedHeight(200)
-            btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
-            btn_edit=ImageButton(GUIUtilities.get_icon("annotations.png"),size=QSize(15,15))
-            btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
-            card_widget.add_buttons([btn_delete,btn_edit,btn_view])
-
-            pixmap=QPixmap(image_path)
-            pixmap=pixmap.scaled(QSize(150,150),aspectRatioMode=QtCore.Qt.KeepAspectRatio,transformMode=QtCore.Qt.SmoothTransformation)
-            card_widget.label="({0}px / {1}px)".format(pixmap.width(),pixmap.height())
-
-            image_widget=QLabel()
-            image_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-            #image_widget.setScaledContents(True)
-            image_widget.setStyleSheet("QLabel { background-color : black;}")
-
-            image_widget.setPixmap(pixmap)
-            card_widget.body=image_widget
-            card_widget.body_frame.setObjectName("image_card")
-
-            return card_widget
-        return None
-
-    def update(self) -> None:
-        list_widgets = []
-        for img in self.images:
-            card = self.new_image_card_factory(img)
-            if card:
-                list_widgets.append(card)
-        self.grid_layout.widgets = list_widgets
-        super(ImagesGridWidget, self).update()
-
-class MediaTabWidget(QScrollArea):
-    def __init__(self, parent=None):
+class MediaTabWidget(QWidget):
+    def __init__(self, ds_id , parent=None):
         super(MediaTabWidget, self).__init__(parent)
-        self.setCursor(QtCore.Qt.PointingHandCursor)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.central_widget = ImagesGridWidget()
-        self.setWidget(self.central_widget)
-        self.setWidgetResizable(True)
-        self.thread_pool=QThreadPool()
-        self.loading_dialog = QLoadingDialog()
+        self.media_grid = Gallery()
+        self.media_grid.filesDropped.connect(self.gallery_files_dropped_slot)
+        self.media_grid.doubleClicked.connect(self.gallery_card_double_click_slot)
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0,0,0,0)
+        self.layout().addWidget(self.media_grid)
+        self._thread_pool=QThreadPool()
+        self._loading_dialog = QLoadingDialog()
+        self._ds_dao = DatasetDao()
+        self._ds_id = ds_id
         self.load()
 
     def load(self):
+        ds_id = self._ds_id
+
         def do_work():
-            pass
+            entries = self._ds_dao.fetch_entries(ds_id)
+            entries = [vo.file_path for vo in entries]
+            return entries
 
         def done_work(result):
-            self.loading_dialog.close()
+            self.media_grid.items = result
+            self.media_grid.bind()
+            self.media_grid.tag = ds_id
+            self._loading_dialog.close()
 
-        worker=Worker(do_work)
+        worker = Worker(do_work)
         worker.signals.result.connect(done_work)
-        self.thread_pool.start(worker)
-        self.loading_dialog.exec_()
+        self._thread_pool.start(worker)
+        self._loading_dialog.exec_()
+
+    @pyqtSlot(GalleryCard, Gallery)
+    def gallery_card_double_click_slot(self, card: GalleryCard, gallery: Gallery):
+        tab_widget_manager: QTabWidget = self.window().tab_widget_manager
+        image_path = card.tag
+        dataset_id = gallery.tag
+        tab_widget = ImageViewerWidget()
+        tab_widget.image_path = image_path
+        tab_widget.image_dataset = dataset_id
+        tab_widget.bind()
+        tab_widget_manager.addTab(tab_widget,card.tag)
+        tab_widget_manager.setCurrentIndex(1)
+
+    @pyqtSlot(list)
+    @gui_exception
+    def gallery_files_dropped_slot(self, files: []):
+        if self._ds_id is None:
+            return
+        entries_list = []
+        for file_path in files:
+            vo = DatasetEntryVO()
+            vo.file_path = file_path
+            vo.file_size = os.path.getsize(file_path)
+            vo.dataset = self._ds_id
+            entries_list.append(vo)
+        self._ds_dao.add_entries(entries_list)

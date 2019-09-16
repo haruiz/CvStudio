@@ -1,11 +1,20 @@
 
 class DatasetVO():
     def __init__(self):
-        self._id = -1
+        self._id = None
         self._name = ""
         self._folder = ""
         self._description = ""
         self._data_type = ""
+        self._size = 0
+
+    @property
+    def size(self):
+        return  self._size
+
+    @size.setter
+    def size(self, value):
+        self._size = value
 
     @property
     def folder(self):

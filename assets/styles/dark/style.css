@@ -1,6 +1,6 @@
 *{
-    font-family: Roboto, Verdana, Arial, Helvetica, Sans-Serif;
-    font-size: 16px;
+    font-family: Arial, Roboto, Verdana, Arial, Helvetica, Sans-Serif;
+    font-size: 14px;
 }
 
 QLabel {
@@ -58,7 +58,7 @@ QFrame#image_card{
 
 }
 QFrame#image_card:hover{
-    background-color: #ffd0bf;
+    background-color: ghostwhite;
     border-width: 1px;
     border-radius: 8px;
 }

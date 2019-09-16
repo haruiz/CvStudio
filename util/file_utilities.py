@@ -1,4 +1,5 @@
 import configparser
+import mimetypes
 import os
 import shutil
 import sys
@@ -21,7 +22,7 @@ class FileUtilities:
         return platforms[sys.platform]
 
     @staticmethod
-    def get_data_path():
+    def get_usr_folder():
         config=configparser.ConfigParser()
         config.read('./config.ini')
         data_folder = config.get('APP',"DATA_FOLDER",fallback=os.path.join(str(Path.home()),"data"))
@@ -38,6 +39,12 @@ class FileUtilities:
             else:
                 shutil.rmtree(file_object_path)
 
+    @classmethod
+    def delete_folder(cls, folder_path):
+        if os.path.exists(folder_path):
+            cls.clear_folder(folder_path)
+            shutil.rmtree(folder_path)
+
     @staticmethod
     def create_new_folder(path):
         assert os.path.isdir(path), "invalid parameters"
@@ -50,3 +57,16 @@ class FileUtilities:
         except Exception as ex:
             raise ex
         return new_folder
+
+    @staticmethod
+    def infer_media_type(file):
+        try:
+            mime_type,_=mimetypes.guess_type(file)
+            if mime_type.find("image") != -1:
+                return file,"image"
+            elif mime_type.find("video") != -1:
+                return file,"video"
+            else:
+                return file,"Other"
+        except:
+            return file, "Other"
