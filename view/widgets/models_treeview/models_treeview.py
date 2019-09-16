@@ -29,7 +29,6 @@ class ModelsTreeview(QTreeView, QObject):
         model: CustomModel=CustomModel(["Name","Uri"])
         self._root_node = CustomNode(["Models",""],level=1,status=1,success_icon=GUIUtilities.get_icon("database.png"))
         model.addChild(self._root_node)
-        self.hub_dao = HubDao()
         self.setModel(model)
 
         #self.selectionModel().selectionChanged.connect(self.selectionChangedSlot)

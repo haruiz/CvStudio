@@ -1,9 +1,11 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject,QSize,pyqtSignal,QModelIndex
+from PyQt5.QtCore import QObject,QSize,pyqtSignal,QModelIndex,QThreadPool
 from PyQt5.QtGui import QStandardItemModel,QContextMenuEvent,QIcon,QStandardItem
-from PyQt5.QtWidgets import QTreeView,QLabel,QAction,QMenu
+from PyQt5.QtWidgets import QTreeView,QLabel,QAction,QMenu,QAbstractItemView
 
 from util import GUIUtilities
+from view.widgets.common import CustomModel,CustomNode
+from view.widgets.loading_dialog import QLoadingDialog
 from vo import LabelVo
 
 
@@ -13,20 +15,21 @@ class LabelsTreeView(QTreeView, QObject):
     CTX_MENU_DELETE_LABEL="Delete Label"
     def __init__(self, parent=None):
         super(LabelsTreeView, self).__init__(parent)
+        self.setIconSize(QSize(18,18))
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
         self.setCursor(QtCore.Qt.PointingHandCursor)
-        self._model=QStandardItemModel(0,2)
-        self._model.setHeaderData(0,QtCore.Qt.Horizontal,"Name")
-        self._model.setHeaderData(1,QtCore.Qt.Horizontal,"Color")
-        self.setModel(self._model)
+        self.setDropIndicatorShown(True)
+        self._thread_pool=QThreadPool()
+        self._loading_dialog=QLoadingDialog()
+        model: CustomModel=CustomModel(["Name","Uri"])
+        self._root_node=CustomNode(["Models",""],level=1,status=1,success_icon=GUIUtilities.get_icon("database.png"))
+        model.addChild(self._root_node)
+        self.setModel(model)
 
     def add_node(self, vo: LabelVo):
-        self._model.insertRow(0)
-        self._model.setData(self._model.index(0,0),vo.name)
-        color_label=QLabel()
-        color_label.setProperty("tag", vo)
-        color_label.setFixedSize(QSize(20,20))
-        color_label.setStyleSheet("QLabel { background-color : %s; } " % vo.color)
-        self.setIndexWidget(self._model.index(0,1),color_label)
+        pass
 
 
     def contextMenuEvent(self, evt: QContextMenuEvent) -> None:
