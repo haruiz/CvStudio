@@ -470,6 +470,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
         @gui_exception
         def done_work(result):
+            self._loading_dialog.close()
             data,error=result
             if error is None:
                 self.treeview_models.add_node(data)
@@ -480,6 +481,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             worker=Worker(do_work, repository)
             worker.signals.result.connect(done_work)
             self._thread_pool.start(worker)
+            self._loading_dialog.exec_()
 
     def bind(self):
         self.load_images()
