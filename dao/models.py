@@ -61,5 +61,5 @@ def create_tables():
             DatasetEntryEntity,
             LabelEntity
         ]
-        db.drop_tables(models)
+        #db.drop_tables(models)
         db.create_tables(models)
