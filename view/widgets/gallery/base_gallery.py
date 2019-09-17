@@ -71,7 +71,7 @@ class Ui_Gallery(object):
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.label = QtWidgets.QLabel(self.center_widget)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setObjectName("label")
+        self.label.setObjectName("colorEditor")
         self.verticalLayout_4.addWidget(self.label)
         self.scrollArea.setWidget(self.center_widget)
         self.verticalLayout_3.addWidget(self.scrollArea)

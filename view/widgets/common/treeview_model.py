@@ -5,6 +5,7 @@ import typing
 from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex,pyqtSignal,QObject
 from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QAbstractItemDelegate,QWidget,QStyleOptionViewItem,QSpinBox
 
 
 class CustomNode(object):
@@ -128,6 +129,18 @@ class CustomNode(object):
 class CustomModelSignals(QObject):
     data_changed = pyqtSignal(CustomNode, int, str, str)
 
+
+class WidgetDelegate(QAbstractItemDelegate):
+    def __init__(self):
+        super(WidgetDelegate, self).__init__()
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QtCore.QModelIndex) -> QWidget:
+        editor=QSpinBox(parent)
+        editor.setFrame(False)
+        editor.setMinimum(0)
+        editor.setMaximum(100)
+        return editor
+
+
 class CustomModel(QtCore.QAbstractItemModel):
     def __init__(self,columns):
         QtCore.QAbstractItemModel.__init__(self)
@@ -188,7 +201,9 @@ class CustomModel(QtCore.QAbstractItemModel):
             return None
         node : CustomNode=index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
-            return node.get_data(index.column())
+            val = node.get_data(index.column())
+
+            return val
         elif role== QtCore.Qt.DecorationRole and index.column() == 0:
             if node.status == 1:
                 return  node.success_icon

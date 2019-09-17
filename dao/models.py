@@ -36,7 +36,7 @@ class LabelEntity(BaseModel):
     color = CharField(null=None)
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
     class Meta:
-        table_name='label'
+        table_name='colorEditor'
 
 class HubEntity(BaseModel):
     path = CharField(unique=True)

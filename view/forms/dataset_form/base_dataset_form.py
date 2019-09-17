@@ -25,7 +25,7 @@ class Ui_Base_DatasetDialog(object):
         self.nameLineEdit.setObjectName("nameLineEdit")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.nameLineEdit)
         self.label = QtWidgets.QLabel(Base_DatasetDialog)
-        self.label.setObjectName("label")
+        self.label.setObjectName("colorEditor")
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label)
         self.descriptionEditText = QtWidgets.QPlainTextEdit(Base_DatasetDialog)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
