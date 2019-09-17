@@ -21,7 +21,7 @@ from decor import gui_exception,work_exception
 from util import GUIUtilities,Worker
 from view.forms import NewRepoForm
 from view.forms.label_form import NewLabelForm
-from view.widgets.labels_treeview import LabelsTreeView
+from view.widgets.labels_tableview import LabelsTableView
 from view.widgets.loading_dialog import QLoadingDialog
 from view.widgets.models_treeview import ModelsTreeview
 from vo import HubVO,LabelVo
@@ -362,21 +362,17 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.tree_view_models_layout.addWidget(self.treeview_models)
         self.treeview_models.action_click.connect(self.trv_models_action_click_slot)
 
-        self.treeview_labels = LabelsTreeView()
+        self.treeview_labels = LabelsTableView()
         self.treeview_labels.action_click.connect(self.trv_labels_action_click_slot)
         self.tree_view_labels_layout.addWidget(self.treeview_labels)
         self.treeview_labels.selectionModel().selectionChanged.connect(self.default_label_changed_slot)
-        #self.treeview_labels.add_node("cat", "red")
-        #self.treeview_labels.add_node("dog","yellow")
-        #self.treeview_labels.add_node("person","blue")
         self.create_actions_bar()
 
     def default_label_changed_slot(self, selection: QItemSelection):
-        index=self.treeview_labels.currentIndex()
-        widget_item: QWidget=self.treeview_labels.indexWidget(index)
-        print(widget_item)
-        if widget_item:
-            current_label: LabelVo=widget_item.property("tag")
+        selected_rows =self.treeview_labels.selectionModel().selectedRows(2)
+        if len(selected_rows) > 0:
+            index: QModelIndex = selected_rows[0]
+            current_label: LabelVo=self.treeview_labels.model().data(index)
             self.viewer.current_label=current_label
 
 
@@ -453,7 +449,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             result, error = result
             if error is None:
                 for entry in result:
-                    self.treeview_labels.add_node(entry)
+                    self.treeview_labels.add_row(entry)
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
@@ -512,22 +508,20 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
     @gui_exception
     def trv_labels_action_click_slot(self,action: QAction):
-        model  = self.treeview_labels.model()
+        model : QStandardItemModel = self.treeview_labels.model()
         if action.text() == self.treeview_labels.CTX_MENU_ADD_LABEL:
             form=NewLabelForm()
             if form.exec_() == QDialog.Accepted:
                 vo: LabelVo=form.result
                 vo.dataset=self.image_dataset
                 self._labels_dao.save(vo)
-                self.treeview_labels.add_node(vo)
+                self.treeview_labels.add_row(vo)
         elif action.text() == self.treeview_labels.CTX_MENU_DELETE_LABEL:
             index : QModelIndex = action.data()
             if index:
-                #text_item: QStandardItem = model.item(index.row(),0)
-                widget_item: QWidget = self.treeview_labels.indexWidget(index)
-                vo : LabelVo = widget_item.property("tag")
+                vo=model.index(index.row(),2).data()
                 self._labels_dao.delete(vo.id)
-                self.treeview_labels.model().removeRow(index.row())
+                model.removeRow(index.row())
 
     def autolabel(self, repo, model_name):
         def do_work():
