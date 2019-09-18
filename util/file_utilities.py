@@ -63,10 +63,10 @@ class FileUtilities:
         try:
             mime_type,_=mimetypes.guess_type(file)
             if mime_type.find("image") != -1:
-                return file,"image"
+                return "image"
             elif mime_type.find("video") != -1:
-                return file,"video"
+                return "video"
             else:
-                return file,"Other"
+                return "Other"
         except:
-            return file, "Other"
+            return "Other"

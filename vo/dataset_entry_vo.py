@@ -1,8 +1,17 @@
 class DatasetEntryVO:
     def __init__(self):
+        self._id = None
         self._file_path =""
         self._file_size = ""
         self._dataset = ""
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = value
 
     @property
     def file_path(self):

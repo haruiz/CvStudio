@@ -14,7 +14,7 @@ from ..common import CustomModel, CustomNode
 class ModelsTreeview(QTreeView, QObject):
     action_click = pyqtSignal(QAction)
     CTX_MENU_NEW_DATASET_ACTION = "Add new repository"
-    CTX_MENU_AUTO_LABEL_ACTION= "Auto-colorEditor"
+    CTX_MENU_AUTO_LABEL_ACTION= "Auto-Label"
 
     def __init__(self, parent=None):
         super(ModelsTreeview, self).__init__(parent)

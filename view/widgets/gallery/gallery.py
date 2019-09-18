@@ -260,8 +260,6 @@ class Gallery(QWidget, Ui_Gallery, QObject):
                     valid_files.append(f)
         valid_files = sorted(valid_files, key=lambda v: os.path.basename(v))
         self.filesDropped.emit(valid_files)
-        self.items = valid_files
-        self.bind()
 
     def bind(self):
 
@@ -276,19 +274,21 @@ class Gallery(QWidget, Ui_Gallery, QObject):
 
             def do_work(progress_callback):
                 page = self._curr_page
-                files = self._pages[page]
+                items = self._pages[page]
                 images = {}
                 videos = {}
-                for f in files:
-                    file_path, file_type = FileUtilities.infer_media_type(f)
+                for item in items:
+                    file_path = item.file_path
+                    file_size = item.file_size
+                    file_type = FileUtilities.infer_media_type(file_path)
                     if file_type == "video":
                         result = dask.compute(*[
                             delayed(VideoUtilities.extract_frame_cv2)(file_path),
                             delayed(VideoUtilities.duration)(file_path)
                         ])
-                        progress_callback.emit([file_path, "video", result[0], result[1]])
+                        progress_callback.emit([item, file_path, "video", result[0], result[1]])
                     elif file_type == "image":
-                        pixmap=QPixmap(f)
+                        pixmap=QPixmap(file_path)
                         w, h = pixmap.width(), pixmap.height()
                         if w > h:
                             pixmap=pixmap.scaledToWidth(150,mode=QtCore.Qt.SmoothTransformation)
@@ -296,16 +296,17 @@ class Gallery(QWidget, Ui_Gallery, QObject):
                             pixmap=pixmap.scaledToHeight(150,mode=QtCore.Qt.SmoothTransformation)
                         # pixmap=pixmap.scaled(QSize(150,150),aspectRatioMode=QtCore.Qt.KeepAspectRatio,transformMode=QtCore.Qt.SmoothTransformation)
                         # image_widget.setScaledContents(True)
-                        progress_callback.emit([file_path, "image", pixmap, w, h])
+                        progress_callback.emit([item, file_path, "image", pixmap, w, h])
 
             def progress(args):
-                file_path = args[0]
-                media_type = args[1]
-                thumbnail=args[2]
+                item = args[0]
+                file_path = args[1]
+                media_type = args[2]
+                thumbnail=args[3]
                 if media_type == "image":
-                    w, h = args[3], args[4]
+                    w, h = args[4], args[5]
                     image_card=ImageCard()
-                    image_card.tag=file_path
+                    image_card.tag=item
                     image_card.source=thumbnail
                     image_card.label.setText("({0}px / {1}px)".format(w,h))
                     image_card.setFixedHeight(240)
@@ -318,7 +319,7 @@ class Gallery(QWidget, Ui_Gallery, QObject):
                 elif media_type == "video":
                     video_dur=args[3]
                     video_card=VideoCard()
-                    video_card.tag=file_path
+                    video_card.tag=item
                     video_card.duration=video_dur
                     video_card.label.setText(strftime("%H:%M:%S",gmtime(video_dur)))
                     video_card.source=thumbnail

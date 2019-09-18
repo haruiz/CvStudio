@@ -28,6 +28,9 @@ class DatasetEntryEntity(BaseModel):
     file_size=CharField()
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
     class Meta:
+        indexes=(
+            (("file_path","dataset"),True),
+        )
         table_name='media'
 
 class LabelEntity(BaseModel):
@@ -36,13 +39,15 @@ class LabelEntity(BaseModel):
     color = CharField(null=None)
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
     class Meta:
-        table_name='colorEditor'
+        table_name='label'
+
 
 class HubEntity(BaseModel):
     path = CharField(unique=True)
     author = CharField(null=True)
     class Meta:
         table_name='hub'
+
 
 class HubModelEntity(BaseModel):
     name = CharField(unique=True)
@@ -52,6 +57,15 @@ class HubModelEntity(BaseModel):
         table_name='hub_model'
 
 
+class AnnotationEntity(BaseModel):
+    entry = ForeignKeyField(DatasetEntryEntity)
+    label=ForeignKeyField(LabelEntity, null=True)
+    points = CharField()
+    kind = CharField()
+    class Meta:
+        table_name="annotation"
+
+
 def create_tables():
     with db:
         models = [
@@ -59,7 +73,8 @@ def create_tables():
             HubEntity,
             HubModelEntity,
             DatasetEntryEntity,
-            LabelEntity
+            LabelEntity,
+            AnnotationEntity
         ]
         #db.drop_tables(models)
         db.create_tables(models)

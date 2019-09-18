@@ -1,6 +1,13 @@
 from PyQt5 import QtGui,QtCore,QtWidgets
-from PyQt5.QtCore import QObject,pyqtSignal,QPointF
+from PyQt5.QtCore import QObject,pyqtSignal,QPointF,QThreadPool
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsSceneContextMenuEvent,QMenu,QAction,QGraphicsItem,QGraphicsSceneMouseEvent
+
+from dao import LabelDao
+from decor import gui_exception,work_exception
+from util import Worker
+from vo import LabelVo,DatasetEntryVO
+
 
 class EditablePolygonPointSignals(QObject):
     deleted=pyqtSignal(int)
@@ -17,7 +24,6 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
     def __init__(self,index):
         super(EditablePolygonPoint,self).__init__()
         self.setPath(EditablePolygonPoint.circle)
-
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable,True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable,True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges,True)
@@ -31,22 +37,25 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
         self.setPen(QtGui.QPen(self._pen_color,2))
         self.setBrush(self._brush_color)
 
+
     @property
     def pen_color(self):
         return self._pen_color
 
     @pen_color.setter
-    def pen_color(self,value):
-        self._pen_color=value
-        self.setPen(QtGui.QPen(self._pen_color,1))
+    def pen_color(self, value):
+        self._pen_color = value
+        self.setPen(QtGui.QPen(self._pen_color,2))
 
     @property
     def brush_color(self):
         return self._brush_color
 
     @brush_color.setter
-    def brush_color(self,value):
-        self._brush_color=value
+    def brush_color(self, value):
+        self._brush_color = value
+        self.setBrush(self._brush_color)
+
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         self.signals.doubleClicked.emit(self)
@@ -94,27 +103,39 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem):
         self.points=[]
         self.controls=[]
         self.setOpacity(0.5)
+        self._labels_dao = LabelDao()
         self.signals = EditablePolygonSignals()
         self._pen_color=QtGui.QColor(235,72,40)
         self._brush_color=QtGui.QColor(255, 0, 0, 100)
         self.setPen(QtGui.QPen(self._pen_color,1))
+        self._label = LabelVo()
+        self._tag = None
 
     @property
-    def pen_color(self):
-        return self._pen_color
+    def label(self):
+        return self._label
 
-    @pen_color.setter
-    def pen_color(self,value):
-        self._pen_color=value
-        self.setPen(QtGui.QPen(self._pen_color,1))
+    @label.setter
+    def label(self, value):
+        self._label = value
+        if self._label:
+            self._pen_color = QColor(self._label.color)
+            self.setPen(QtGui.QPen(self._pen_color,1))
+            self._brush_color = QColor(self._label.color)
+            self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+            if len(self.controls) > 0:
+                for point_control in self.controls:
+                    point_control.brush_color=self._brush_color
+                    point_control.pen_color=self._pen_color
+
 
     @property
-    def brush_color(self):
-        return self._brush_color
+    def tag(self)-> DatasetEntryVO:
+        return self._tag
 
-    @brush_color.setter
-    def brush_color(self, value):
-        self._brush_color = value
+    @tag.setter
+    def tag(self,value):
+        self._tag = value
 
     @property
     def last_point(self):
@@ -127,8 +148,8 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem):
     def addPoint(self,p):
         self.points.append(p)
         item=EditablePolygonPoint(len(self.points)-1)
-        item.brush_color = self.brush_color
-        item.pen_color = self.pen_color
+        item.brush_color=self._brush_color
+        item.pen_color=self._pen_color
         item.signals.moved.connect(self.point_moved_slot)
         item.signals.deleted.connect(self.point_deleted_slot)
         item.signals.doubleClicked.connect(self.point_double_clicked)
@@ -140,8 +161,8 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem):
     def insertPoint(self,index,p):
         self.points.insert(index, p)
         item=EditablePolygonPoint(index)
-        item.brush_color=self.brush_color
-        item.pen_color=self.pen_color
+        item.brush_color=self._brush_color
+        item.pen_color=self._pen_color
         item.signals.moved.connect(self.point_moved_slot)
         item.signals.deleted.connect(self.point_deleted_slot)
         item.signals.doubleClicked.connect(self.point_double_clicked)
@@ -159,12 +180,24 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem):
         self.scene().removeItem(self)
 
     def contextMenuEvent(self,evt: QGraphicsSceneContextMenuEvent) -> None:
-        menu=QMenu()
-        action: QAction=menu.addAction("Delete")
-        delete_polygon=menu.exec_(evt.screenPos())
-        if action == delete_polygon:
+
+        menu = QMenu()
+        delete_polygon_action = menu.addAction("Delete")
+        if self.tag:
+            result=self._labels_dao.fetch_all(self.tag.dataset)
+            if len(result) > 0:
+                labels_menu=menu.addMenu("labels")
+                for vo in result:
+                    action = labels_menu.addAction(vo.name)
+                    action.setData(vo)
+
+        action = menu.exec_(evt.screenPos())
+        if action == delete_polygon_action:
             self.delete_polygon()
             self.signals.deleted.emit(self)
+        elif action and  isinstance(action.data(), LabelVo):
+            self.label = action.data()
+
 
     def point_moved_slot(self,item: EditablePolygonPoint,pos: QPointF):
         self.points[item.index]=self.mapFromScene(pos)
