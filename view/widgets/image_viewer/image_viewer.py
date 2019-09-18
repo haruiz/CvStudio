@@ -555,12 +555,13 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def autolabel(self, repo, model_name):
         def do_work():
             try:
+                print(repo, model_name)
                 from PIL import Image
                 from torchvision import transforms
                 import torch
                 model=torch.hub.load(repo,model_name,pretrained=True)
                 model.eval()
-                input_image=Image.open(self.image_path)
+                input_image=Image.open(self.source.file_path)
                 preprocess=transforms.Compose([
                     transforms.Resize(480),
                     transforms.ToTensor(),
