@@ -2,8 +2,8 @@ from datetime import  datetime
 
 import typing
 
-from dao import db,AnnotationEntity
-from vo import  AnnotaVO
+from dao import db,AnnotationEntity,LabelEntity
+from vo import AnnotaVO,LabelVO
 from peewee import *
 
 class AnnotaDao:
@@ -44,16 +44,39 @@ class AnnotaDao:
 
     @db.connection_context()
     def fetch_all(self,entity_id: int):
-        query=(AnnotationEntity
-               .select()
-               .where(AnnotationEntity.entry == entity_id))
+        a=AnnotationEntity.alias()
+        l=LabelEntity.alias()
+        query=(
+            a.select(
+                a.id.alias("annot_id"),
+                a.entry.alias("annot_entry"),
+                a.kind.alias("annot_kind"),
+                a.points.alias("annot_points"),
+                l.id.alias("label_id"),
+                l.name.alias("label_name"),
+                l.color.alias("label_color")
+                )
+                .join(l,on=(a.label == l.id), join_type="LEFT")
+                .where(a.entry == entity_id)
+        )
+
+
         cursor = query.dicts().execute()
         result=[]
-        for ds in list(cursor):
-            vo=AnnotaVO()
-            result.append(vo)
-            for k,v in ds.items():
-                setattr(vo,k,v)
+        for row in cursor:
+            annot=AnnotaVO()
+            annot.id = row["annot_id"]
+            annot.entry = row["annot_entry"]
+            annot.kind=row["annot_kind"]
+            annot.points = row["annot_points"]
+            annot.label = None
+            if row["label_id"]:
+                label = LabelVO()
+                label.id = row["label_id"]
+                label.name = row["label_name"]
+                label.color = row["label_color"]
+                annot.label = label
+            result.append(annot)
         return result
 
 

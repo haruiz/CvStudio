@@ -1,7 +1,7 @@
 import itertools
 
 from dao import db,HubEntity,HubModelEntity,IntegrityError,LabelEntity
-from vo import LabelVo
+from vo import LabelVO
 
 
 class LabelDao:
@@ -9,20 +9,21 @@ class LabelDao:
         pass
 
     @db.atomic()
-    def save(self, vo: LabelVo):
+    def save(self,vo: LabelVO):
         label = LabelEntity.create(
             name=vo.name,
             color=vo.color,
             dataset=vo.dataset
         )
-        return label
+        vo.id = label.get_id()
+        return vo
 
     @db.connection_context()
     def fetch_all(self, ds_id):
         cursor=LabelEntity.select().where(LabelEntity.dataset == ds_id).dicts().execute()
         result=[]
         for ds in list(cursor):
-            vo=LabelVo()
+            vo=LabelVO()
             result.append(vo)
             for k,v in ds.items():
                 setattr(vo,k,v)

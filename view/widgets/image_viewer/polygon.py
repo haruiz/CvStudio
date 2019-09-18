@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QGraphicsSceneContextMenuEvent,QMenu,QAction,QGraphi
 from dao import LabelDao
 from decor import gui_exception,work_exception
 from util import Worker
-from vo import LabelVo,DatasetEntryVO
+from vo import LabelVO,DatasetEntryVO
 
 
 class EditablePolygonPointSignals(QObject):
@@ -108,7 +108,7 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem):
         self._pen_color=QtGui.QColor(235,72,40)
         self._brush_color=QtGui.QColor(255, 0, 0, 100)
         self.setPen(QtGui.QPen(self._pen_color,1))
-        self._label = LabelVo()
+        self._label = LabelVO()
         self._tag = None
 
     @property
@@ -195,7 +195,7 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem):
         if action == delete_polygon_action:
             self.delete_polygon()
             self.signals.deleted.emit(self)
-        elif action and  isinstance(action.data(), LabelVo):
+        elif action and  isinstance(action.data(),LabelVO):
             self.label = action.data()
 
 

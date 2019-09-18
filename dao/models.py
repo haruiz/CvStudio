@@ -58,8 +58,8 @@ class HubModelEntity(BaseModel):
 
 
 class AnnotationEntity(BaseModel):
-    entry = ForeignKeyField(DatasetEntryEntity)
-    label=ForeignKeyField(LabelEntity, null=True)
+    entry = ForeignKeyField(DatasetEntryEntity, on_delete="CASCADE")
+    label=ForeignKeyField(LabelEntity, null=True, on_delete="CASCADE")
     points = CharField()
     kind = CharField()
     class Meta:
@@ -78,3 +78,5 @@ def create_tables():
         ]
         #db.drop_tables(models)
         db.create_tables(models)
+        db.execute_sql("PRAGMA foreign_keys=ON")
+
