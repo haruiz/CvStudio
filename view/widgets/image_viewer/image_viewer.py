@@ -24,7 +24,7 @@ from view.forms.label_form import NewLabelForm
 from view.widgets.labels_tableview import LabelsTableView
 from view.widgets.loading_dialog import QLoadingDialog
 from view.widgets.models_treeview import ModelsTreeview
-from vo import HubVO,LabelVo,DatasetEntryVO,AnnotaVO
+from vo import HubVO,LabelVO,DatasetEntryVO,AnnotaVO
 from .base_image_viewer import Ui_Image_Viewer_Widget
 from .box import EditableBox
 from .image_pixmap import ImagePixmap
@@ -131,6 +131,15 @@ class ImageViewer(QGraphicsView,QObject):
                 self._scene.removeItem(item)
             elif isinstance(item, EditablePolygon):
                 item.delete_polygon()
+
+    def remove_annotations_by_label(self, label_name):
+        for item in self._scene.items():
+            if isinstance(item, EditableBox):
+                if item.label and item.label.name == label_name:
+                    self._scene.removeItem(item)
+            elif isinstance(item, EditablePolygon):
+                if item.label and item.label.name == label_name:
+                    item.delete_polygon()
 
     def enable_items(self, value):
         for item in self._scene.items():
@@ -371,7 +380,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         selected_rows =self.treeview_labels.selectionModel().selectedRows(2)
         if len(selected_rows) > 0:
             index: QModelIndex = selected_rows[0]
-            current_label: LabelVo=self.treeview_labels.model().data(index)
+            current_label: LabelVO=self.treeview_labels.model().data(index)
             self.viewer.current_label = current_label
 
     def image_list_sel_changed_slot(self, curr: CustomListWidgetItem, prev: CustomListWidgetItem):
@@ -401,18 +410,22 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         def do_work():
             entries=self._ds_dao.fetch_entries(self.source.dataset)
             return entries,None
+
         @gui_exception
         def done_work(result):
             data,error=result
+            selected_item = None
             for vo in data:
                 item = CustomListWidgetItem(vo.file_path)
                 item.tag = vo
+                if vo.file_path == self.source.file_path:
+                    selected_item = item
                 self.images_list_widget.addItem(item)
+                self.images_list_widget.setCurrentItem(selected_item)
 
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
-
 
     @gui_exception
     def load_models(self):
@@ -462,22 +475,27 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 img_bbox: QRectF=self.viewer.pixmap.sceneBoundingRect()
                 offset=QPointF(img_bbox.width()/2,img_bbox.height()/2)
                 for entry in result:
-                    vo : AnnotaVO = entry
-                    points = map(int,vo.points.split(","))
-                    points = list(more_itertools.chunked(points, 2))
-                    if vo.kind == "box":
-                        x = points[0][0] - offset.x()
-                        y=  points[0][1] - offset.y()
-                        w = math.fabs(points[0][0] - points[1][0])
-                        h = math.fabs(points[0][1] - points[1][1])
-                        roi : QRectF = QRectF(x,y,w,h)
-                        rect=EditableBox(roi)
-                        self.viewer.scene().addItem(rect)
-                    elif vo.kind == "polygon":
-                        polygon = EditablePolygon()
-                        self.viewer.scene().addItem(polygon)
-                        for p in points:
-                            polygon.addPoint(QPoint(p[0] - offset.x(), p[1] - offset.y()))
+                    try:
+                        vo : AnnotaVO = entry
+                        points = map(float,vo.points.split(","))
+                        points = list(more_itertools.chunked(points, 2))
+                        if vo.kind == "box":
+                            x = points[0][0] - offset.x()
+                            y=  points[0][1] - offset.y()
+                            w = math.fabs(points[0][0] - points[1][0])
+                            h = math.fabs(points[0][1] - points[1][1])
+                            roi : QRectF = QRectF(x,y,w,h)
+                            rect=EditableBox(roi)
+                            rect.label = vo.label
+                            self.viewer.scene().addItem(rect)
+                        elif vo.kind == "polygon":
+                            polygon = EditablePolygon()
+                            polygon.label = vo.label
+                            self.viewer.scene().addItem(polygon)
+                            for p in points:
+                                polygon.addPoint(QPoint(p[0] - offset.x(), p[1] - offset.y()))
+                    except Exception as ex:
+                        print(ex)
 
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
@@ -516,8 +534,10 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def keyPressEvent(self,event: QtGui.QKeyEvent) -> None:
         row = self.images_list_widget.currentRow()
         if event.key() == QtCore.Qt.Key_A:
+            self.save_annotations()
             self.images_list_widget.setCurrentRow(row-1)
         if event.key() == QtCore.Qt.Key_D:
+            self.save_annotations()
             self.images_list_widget.setCurrentRow(row+1)
         if event.key() == QtCore.Qt.Key_W:
             self.viewer.selection_mode=SELECTION_MODE.POLYGON
@@ -541,15 +561,16 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         if action.text() == self.treeview_labels.CTX_MENU_ADD_LABEL:
             form=NewLabelForm()
             if form.exec_() == QDialog.Accepted:
-                vo: LabelVo=form.result
-                vo.dataset=self.source.dataset
-                self._labels_dao.save(vo)
-                self.treeview_labels.add_row(vo)
+                label_vo: LabelVO=form.result
+                label_vo.dataset=self.source.dataset
+                label_vo = self._labels_dao.save(label_vo)
+                self.treeview_labels.add_row(label_vo)
         elif action.text() == self.treeview_labels.CTX_MENU_DELETE_LABEL:
             index : QModelIndex = action.data()
             if index:
-                vo=model.index(index.row(),2).data()
-                self._labels_dao.delete(vo.id)
+                label_vo=model.index(index.row(),2).data()
+                self._labels_dao.delete(label_vo.id)
+                self.viewer.remove_annotations_by_label(label_vo.name)
                 model.removeRow(index.row())
 
     def autolabel(self, repo, model_name):
@@ -651,30 +672,30 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def btn_enable_free_selection_clicked_slot(self):
         self.viewer.selection_mode=SELECTION_MODE.FREE
 
-    def btn_save_annotations_clicked_slot(self):
-        scene : QGraphicsScene = self.viewer.scene()
+    def save_annotations(self):
+        scene: QGraphicsScene=self.viewer.scene()
         self._annot_dao.delete(self.source.id)
-        annot_list = []
+        annot_list=[]
         for item in scene.items():
             img_bbox: QRectF=self.viewer.pixmap.sceneBoundingRect()
             offset=QPointF(img_bbox.width()/2,img_bbox.height()/2)
-            if isinstance(item, EditableBox):
-                item_box: QRectF= item.sceneBoundingRect()
-                x1=math.floor(item_box.topLeft().x() + offset.x())
-                y1=math.floor(item_box.topRight().y() + offset.y())
-                x2=math.floor(item_box.bottomRight().x() + offset.x())
-                y2=math.floor(item_box.bottomRight().y() + offset.y())
-                box = AnnotaVO()
-                box.label = item.label.id if item.label else None
-                box.entry = self.source.id
-                box.kind = "box"
-                box.points = ",".join(map(str, [x1,y1,x2,y2]))
+            if isinstance(item,EditableBox):
+                item_box: QRectF=item.sceneBoundingRect()
+                x1=math.floor(item_box.topLeft().x()+offset.x())
+                y1=math.floor(item_box.topRight().y()+offset.y())
+                x2=math.floor(item_box.bottomRight().x()+offset.x())
+                y2=math.floor(item_box.bottomRight().y()+offset.y())
+                box=AnnotaVO()
+                box.label=item.label.id if item.label else None
+                box.entry=self.source.id
+                box.kind="box"
+                box.points=",".join(map(str,[x1,y1,x2,y2]))
                 annot_list.append(box)
-            elif isinstance(item, EditablePolygon):
-                points=[[math.floor(pt.x() + offset.x()),math.floor(pt.y() + offset.y())] for pt in item.points]
-                points = np.asarray(points).flatten().tolist()
+            elif isinstance(item,EditablePolygon):
+                points=[[math.floor(pt.x()+offset.x()),math.floor(pt.y()+offset.y())] for pt in item.points]
+                points=np.asarray(points).flatten().tolist()
                 poly=AnnotaVO()
-                poly.label = item.label.id if item.label else None
+                poly.label=item.label.id if item.label else None
                 poly.entry=self.source.id
                 poly.kind="polygon"
                 poly.points=",".join(map(str,points))
@@ -682,6 +703,8 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
         self._annot_dao.save(annot_list)
 
+    def btn_save_annotations_clicked_slot(self):
+        self.save_annotations()
 
     def _scene_item_added(self, item: QGraphicsItem):
         item.tag = self.source

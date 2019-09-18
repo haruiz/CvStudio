@@ -8,7 +8,7 @@ from util import GUIUtilities
 from view.widgets.common import CustomModel,CustomNode
 from view.widgets.common.treeview_model import WidgetDelegate
 from view.widgets.loading_dialog import QLoadingDialog
-from vo import LabelVo
+from vo import LabelVO
 
 
 class ClickableLineEdit(QLineEdit, QObject):
@@ -96,11 +96,12 @@ class LabelsTableView(QTableView,QObject):
         self.setItemDelegate(delegate)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         header=self.horizontalHeader()
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         header.setSectionResizeMode(0,QHeaderView.Stretch)
         header.setSectionResizeMode(1,QHeaderView.Stretch)
         self.setColumnHidden(2,True)
 
-    def add_row(self,vo: LabelVo):
+    def add_row(self,vo: LabelVO):
         row = self._model.rowCount(QModelIndex())
         self._model.insertRow(row)
         self._model.setData(self._model.index(row,0),vo.name)
