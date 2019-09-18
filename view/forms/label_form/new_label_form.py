@@ -21,6 +21,13 @@ class NewLabelForm(QDialog, Ui_NewLabelDialog):
         vo.color = self.colorLineEdit.text()
         return vo
 
+    def accept(self) -> None:
+        if self.result.color and self.result.name:
+            super(NewLabelForm, self).accept()
+        else:
+            GUIUtilities.show_info_message("The color and name fields are required","info")
+        return
+
     def btn_pick_color_click_slot(self):
         color=QColorDialog.getColor()
         if color.isValid():

@@ -29,7 +29,7 @@ class LabelDao:
         return result
 
     @db.connection_context()
-    def delete(self,id: int):
+    def delete(self, id: int):
         results=LabelEntity.delete_by_id(id)
         return results
 

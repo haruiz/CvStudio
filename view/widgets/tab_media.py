@@ -34,10 +34,8 @@ class MediaTabWidget(QWidget):
 
     def load(self):
         ds_id = self._ds_id
-
         def do_work():
             entries = self._ds_dao.fetch_entries(ds_id)
-            entries = [vo.file_path for vo in entries]
             return entries
 
         def done_work(result):
@@ -45,7 +43,6 @@ class MediaTabWidget(QWidget):
             self.media_grid.bind()
             self.media_grid.tag = ds_id
             self._loading_dialog.close()
-
         worker = Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
@@ -54,20 +51,17 @@ class MediaTabWidget(QWidget):
     @pyqtSlot(GalleryCard, Gallery)
     def gallery_card_double_click_slot(self, card: GalleryCard, gallery: Gallery):
         tab_widget_manager: QTabWidget = self.window().tab_widget_manager
-        image_path = card.tag
+        item = card.tag
         dataset_id = gallery.tag
         tab_widget = ImageViewerWidget()
-        tab_widget.image_path = image_path
-        tab_widget.image_dataset = dataset_id
+        tab_widget.source = item
         tab_widget.bind()
-        tab_widget_manager.addTab(tab_widget,card.tag)
+        tab_widget_manager.addTab(tab_widget,item.file_path)
         tab_widget_manager.setCurrentIndex(1)
 
     @pyqtSlot(list)
     @gui_exception
     def gallery_files_dropped_slot(self, files: []):
-        if self._ds_id is None:
-            return
         entries_list = []
         for file_path in files:
             vo = DatasetEntryVO()
@@ -76,3 +70,4 @@ class MediaTabWidget(QWidget):
             vo.dataset = self._ds_id
             entries_list.append(vo)
         self._ds_dao.add_entries(entries_list)
+        self.load()
