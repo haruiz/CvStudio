@@ -30,7 +30,7 @@ Send a pull request.
 
 [Free software: MIT license](https://github.com/haruiz/PytorchCvStudio/blob/master/LICENSE)
 
-Citation: haruiz. PytorchCvStudio. Git code (2019). https://github.com/haruiz/PytorchCvStudio
+Citation: haruiz. PyTorchCV Studio. Git code (2019). https://github.com/haruiz/PytorchCvStudio
 
 ## Credits
 
