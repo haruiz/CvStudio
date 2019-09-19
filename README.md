@@ -32,6 +32,25 @@ PyTorch CV Studio supports:
 > **Note:** PyTorch CV Studio only have been developed and tested on Windows. Future platforms (macOS and Linux) 
 >are in the roadmap.
 
+**Windows + Anaconda:**
+
+* Clone the repository:
+  > `git clone https://github.com/haruiz/PytorchCvStudio.git`
+* Download and install [Anaconda](https://www.anaconda.com/distribution/#download) (Python 3+).
+* Open Anaconda Prompt, go to *PyTorchCV* directory and follow the next steps:
+  * Create a new environment with Python 3.6:  
+    > `conda create --name pytorchcv python=3.6`
+  * Install required libraries:
+    > `pip install -r pip_req.txt`
+  * Install [PyTorch](https://pytorch.org/) with conda following the [instructions](https://pytorch.org/get-started/locally/)
+    in the official site. For the purpose of this tutorial we are selecting the following configuration:
+    
+    <img alt="" src="assets/images/pytorch_install_config.png"></img>
+    
+    > `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch`
+* Run and enjoy PyTorchCV Studio: 
+  > `python pytorchcv.py`
+
 ## How to contribute
 
 Send a pull request.
