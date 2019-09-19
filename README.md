@@ -25,7 +25,7 @@ PyTorch CV Studio supports:
     * Build your own custom models using a pretrained model from PyTorch Hub and your annotated dataset.
     * Publish your own custom models to PyTorch Hub.
 * **Experiments:** Develop experiments using your datasets and models from PyTorch Hub or your custom  trained models.
-* **Platforms:** macOS and Linux support.
+* **Platforms:** Windows, macOS and Linux support.
 
 ## Installation
 
