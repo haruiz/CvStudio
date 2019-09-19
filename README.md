@@ -22,6 +22,16 @@ PyTorch CV Studio supports:
 * **Models:** Build your own custom models using a pretrained model from PyTorch Hub and your annotated dataset.
 * **Experiments:** Develop experiments using your datasets and models from PyTorch Hub or your custom  trained models.
  
+## How to contribute
+
+Send a pull request.
+ 
+## License
+
+[Free software: MIT license](https://github.com/haruiz/PytorchCvStudio/blob/master/LICENSE)
+
+Citation: haruiz. PytorchCvStudio. Git code (2019). https://github.com/haruiz/PytorchCvStudio
+
 ## Credits
 
 * <div>Icons made by <a href="https://www.flaticon.com/authors/dave-gandy" title="Dave Gandy">Dave Gandy</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
