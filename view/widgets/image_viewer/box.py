@@ -4,7 +4,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem,QMenu,QGraphicsSceneContextMenuEvent,QAction,QGraphicsItem
 
 from dao import LabelDao
-from vo import LabelVo,DatasetEntryVO
+from vo import LabelVO,DatasetEntryVO
 
 
 class EditableBoxSignals(QObject):
@@ -26,7 +26,7 @@ class EditableBox(QGraphicsRectItem):
         self._brush_color = QColor(255, 0, 0, 100)
         self._tag = None
         self._labels_dao = LabelDao()
-        self._label=LabelVo()
+        self._label=LabelVO()
 
     @property
     def tag(self)-> DatasetEntryVO:
@@ -41,7 +41,7 @@ class EditableBox(QGraphicsRectItem):
         return self._label
 
     @label.setter
-    def label(self,value: LabelVo):
+    def label(self,value: LabelVO):
         self._label=value
         if self._label:
             self._pen_color=QColor(self._label.color)
@@ -63,7 +63,7 @@ class EditableBox(QGraphicsRectItem):
         if action == action_delete:
             self.scene().removeItem(self)
             self.signals.deleted.emit(self)
-        elif action and  isinstance(action.data(),LabelVo):
+        elif action and  isinstance(action.data(),LabelVO):
             self.label=action.data()
 
             
