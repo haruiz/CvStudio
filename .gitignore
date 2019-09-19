@@ -103,5 +103,5 @@ venv.bak/
 # mypy
 .idea
 .mypy_cache/
-studio.db-wal
 studio.db-shm
+studio.db-wal
