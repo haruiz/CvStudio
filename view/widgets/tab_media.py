@@ -69,5 +69,13 @@ class MediaTabWidget(QWidget):
             vo.file_size = os.path.getsize(file_path)
             vo.dataset = self._ds_id
             entries_list.append(vo)
-        self._ds_dao.add_entries(entries_list)
-        self.load()
+
+        def do_work():
+            self._ds_dao.add_entries(entries_list)
+
+        def done_work():
+            self.load()
+
+        worker = Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)

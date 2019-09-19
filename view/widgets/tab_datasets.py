@@ -14,7 +14,7 @@ from .response_grid import GridCard
 from .loading_dialog import QLoadingDialog
 from .response_grid import ResponseGridLayout
 from .image_button import ImageButton
-from hurry.filesize import size,verbose
+from hurry.filesize import size, alternative
 
 
 class DatasetGridWidget(QWidget,QObject):
@@ -40,9 +40,8 @@ class DatasetGridWidget(QWidget,QObject):
         self._entries = value
 
     def create_ds_card(self,ds: DatasetVO):
-        card_widget: GridCard=GridCard(debug=False)
-        card_widget.label="{} \n {}".format(ds.name.title(), size( ds.size) if ds.size else "0M")
-
+        card_widget: GridCard = GridCard(debug=False)
+        card_widget.label = "{} \n {}".format(ds.name, size(ds.size, system=alternative) if ds.size else "0 MB")
         btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
         btn_edit=ImageButton(GUIUtilities.get_icon("edit.png"),size=QSize(15,15))
         btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))

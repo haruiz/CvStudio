@@ -53,7 +53,7 @@ if __name__ == "__main__":
         app=QApplication(sys.argv)
         fusion_theme(app)
         mainWindow=MainWindow()
-        mainWindow.setWindowIcon(GUIUtilities.get_icon("python.png"))
+        mainWindow.setWindowIcon(GUIUtilities.get_icon("pytorch.png"))
         #mainWindow.showMaximized()
         #main_container = MainWindowContainer(mainWindow)
         mainWindow.show()
