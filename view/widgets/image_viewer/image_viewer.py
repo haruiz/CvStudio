@@ -76,8 +76,6 @@ class ImageViewer(QGraphicsView,QObject):
         self._last_point_drawn=QPoint()
         self._current_label = None
 
-
-
     @property
     def current_label(self):
         return self._current_label
