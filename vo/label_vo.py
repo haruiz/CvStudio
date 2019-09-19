@@ -1,4 +1,4 @@
-class LabelVo:
+class LabelVO:
     def __init__(self):
         self._id = None
         self._name = None
