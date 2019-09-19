@@ -10,7 +10,7 @@ class NewLabelForm(QDialog, Ui_NewLabelDialog):
         super(NewLabelForm, self).__init__(parent)
         self.setupUi(self)
         self.setWindowTitle("Create new colorEditor".title())
-        self.setWindowIcon(GUIUtilities.get_icon("python.png"))
+        self.setWindowIcon(GUIUtilities.get_icon("pytorch.png"))
         self.btn_pick_color.clicked.connect(self.btn_pick_color_click_slot)
         self._result=None
 

@@ -101,4 +101,7 @@ venv.bak/
 /site
 
 # mypy
+.idea
 .mypy_cache/
+studio.db-wal
+studio.db-shm
