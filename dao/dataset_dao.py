@@ -78,7 +78,6 @@ class DatasetDao:
         query_results = list(query.dicts().execute())
         result=[]
         for ds in query_results:
-            print(ds)
             vo=DatasetVO()
             result.append(vo)
             for k,v in ds.items():

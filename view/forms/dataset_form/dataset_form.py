@@ -23,10 +23,13 @@ class DatasetForm(QDialog, Ui_Base_DatasetDialog):
             self.typeComboBox.setCurrentText(self._value.data_type)
 
     @property
-    def value(self):
+    def value(self)-> DatasetVO:
         return self._value
 
     def accept(self) -> None:
+        if not self.nameLineEdit.text():
+            GUIUtilities.show_info_message("The name field is required","info")
+            return
         if self._value is None:
             usr_folder=FileUtilities.get_usr_folder()
             new_folder=FileUtilities.create_new_folder(usr_folder)

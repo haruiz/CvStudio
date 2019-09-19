@@ -641,22 +641,29 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self._loading_dialog.exec_()
 
     def create_actions_bar(self):
-        self.btn_enable_polygon_selection=ImageButton(icon=GUIUtilities.get_icon("polygon.png"),size=QSize(38,38))
-        self.btn_enable_rectangle_selection=ImageButton(icon=GUIUtilities.get_icon("square.png"),size=QSize(38,38))
-        self.btn_enable_free_selection=ImageButton(icon=GUIUtilities.get_icon("highlighter.png"),size=QSize(38,38))
-        self.btn_enable_none_selection=ImageButton(icon=GUIUtilities.get_icon("cursor.png"),size=QSize(38,38))
-        self.btn_save_annotations = ImageButton(icon=GUIUtilities.get_icon("save-icon.png"),size=QSize(38,38))
+        self.btn_enable_polygon_selection=ImageButton(icon=GUIUtilities.get_icon("polygon.png"),size=QSize(32,32))
+        self.btn_enable_rectangle_selection=ImageButton(icon=GUIUtilities.get_icon("square.png"),size=QSize(32,32))
+        self.btn_enable_free_selection=ImageButton(icon=GUIUtilities.get_icon("highlighter.png"),size=QSize(32,32))
+        self.btn_enable_none_selection=ImageButton(icon=GUIUtilities.get_icon("cursor.png"),size=QSize(32,32))
+        self.btn_save_annotations = ImageButton(icon=GUIUtilities.get_icon("save-icon.png"),size=QSize(32,32))
+        self.btn_clear_annotations=ImageButton(icon=GUIUtilities.get_icon("clean.png"),size=QSize(32,32))
 
         self.actions_layout.addWidget(self.btn_enable_rectangle_selection)
         self.actions_layout.addWidget(self.btn_enable_polygon_selection)
         self.actions_layout.addWidget(self.btn_enable_free_selection)
         self.actions_layout.addWidget(self.btn_enable_none_selection)
+        self.actions_layout.addWidget(self.btn_clear_annotations)
         self.actions_layout.addWidget(self.btn_save_annotations)
+
         self.btn_save_annotations.clicked.connect(self.btn_save_annotations_clicked_slot)
         self.btn_enable_polygon_selection.clicked.connect(self.btn_enable_polygon_selection_clicked_slot)
         self.btn_enable_rectangle_selection.clicked.connect(self.btn_enable_rectangle_selection_clicked_slot)
         self.btn_enable_free_selection.clicked.connect(self.btn_enable_free_selection_clicked_slot)
         self.btn_enable_none_selection.clicked.connect(self.btn_enable_none_selection_clicked_slot)
+        self.btn_clear_annotations.clicked.connect(self.btn_clear_annotations_clicked_slot)
+
+    def btn_clear_annotations_clicked_slot(self):
+        self.viewer.remove_annotations()
 
     def btn_enable_polygon_selection_clicked_slot(self):
         self.viewer.selection_mode=SELECTION_MODE.POLYGON

@@ -19,8 +19,9 @@ from hurry.filesize import size, alternative
 
 class DatasetGridWidget(QWidget,QObject):
     new_dataset_action_signal = pyqtSignal()
+    open_dataset_action_signal=pyqtSignal(DatasetVO)
     delete_dataset_action_signal=pyqtSignal(DatasetVO)
-    open_dataset_action_signal = pyqtSignal(DatasetVO)
+    refresh_dataset_action_signal = pyqtSignal(DatasetVO)
     edit_dataset_action_signal = pyqtSignal(DatasetVO)
 
     def __init__(self, parent=None):
@@ -44,8 +45,8 @@ class DatasetGridWidget(QWidget,QObject):
         card_widget.label = "{} \n {}".format(ds.name, size(ds.size, system=alternative) if ds.size else "0 MB")
         btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
         btn_edit=ImageButton(GUIUtilities.get_icon("edit.png"),size=QSize(15,15))
-        btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
-        card_widget.add_buttons([btn_delete,btn_edit,btn_view])
+        btn_refresh=ImageButton(GUIUtilities.get_icon("refresh.png"),size=QSize(15,15))
+        card_widget.add_buttons([btn_delete,btn_edit,btn_refresh])
         #icon_file="images_folder.png" if ds.data_type == "Images" else "videos_folder.png"
         icon_file = "folder_empty.png"
         icon=GUIUtilities.get_icon(icon_file)
@@ -53,8 +54,8 @@ class DatasetGridWidget(QWidget,QObject):
         btn_delete.clicked.connect(lambda evt: self.btn_delete_dataset_on_click(ds))
         btn_edit.clicked.connect(lambda evt: self.btn_edit_dataset_on_click(ds))
         card_widget.body=ImageButton(icon)
-        btn_view.clicked.connect(lambda evt: self.btn_view_dataset_on_click(ds))
-        card_widget.body.doubleClicked.connect(lambda evt: self.btn_view_dataset_on_click(ds))
+        btn_refresh.clicked.connect(lambda evt: self.btn_refresh_dataset_on_click(ds))
+        card_widget.body.doubleClicked.connect(lambda evt: self.btn_open_dataset_on_click(ds))
         return card_widget
 
     def create_new_ds_button(self):
@@ -68,7 +69,6 @@ class DatasetGridWidget(QWidget,QObject):
         cards_list = []
         new_dataset_button = self.create_new_ds_button()
         cards_list.append(new_dataset_button)
-
         for ds in self.data_source:
             card_widget = self.create_ds_card(ds)
             cards_list.append(card_widget)
@@ -81,7 +81,10 @@ class DatasetGridWidget(QWidget,QObject):
     def btn_delete_dataset_on_click(self,vo: DatasetVO):
         self.delete_dataset_action_signal.emit(vo)
 
-    def btn_view_dataset_on_click(self,vo: DatasetVO):
+    def btn_refresh_dataset_on_click(self,vo: DatasetVO):
+        self.refresh_dataset_action_signal.emit(vo)
+
+    def btn_open_dataset_on_click(self,vo: DatasetVO):
         self.open_dataset_action_signal.emit(vo)
 
     def btn_edit_dataset_on_click(self,vo: DatasetVO):
@@ -98,8 +101,9 @@ class DatasetTabWidget(QScrollArea):
         self.widgets_grid=DatasetGridWidget()
         self.widgets_grid.new_dataset_action_signal.connect(self.btn_new_dataset_on_slot)
         self.widgets_grid.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_slot)
-        self.widgets_grid.open_dataset_action_signal.connect(self.open_dataset_action_slot)
+        self.widgets_grid.refresh_dataset_action_signal.connect(self.refresh_dataset_action_slot)
         self.widgets_grid.edit_dataset_action_signal.connect(self.edit_dataset_action_slot)
+        self.widgets_grid.open_dataset_action_signal.connect(self.open_dataset_action_slot)
         self.setWidget(self.widgets_grid)
         self.setWidgetResizable(True)
         self.thread_pool=QThreadPool()
@@ -169,13 +173,20 @@ class DatasetTabWidget(QScrollArea):
             self.load()
 
     @QtCore.pyqtSlot(DatasetVO)
+    def refresh_dataset_action_slot(self,vo: DatasetVO):
+        self.load()
+
+    @QtCore.pyqtSlot(DatasetVO)
     def open_dataset_action_slot(self,vo: DatasetVO):
         tab_widget_manager: QTabWidget=self.window().tab_widget_manager
-        tab_widget = MediaTabWidget(vo.id)
+        tab_widget=MediaTabWidget(vo.id)
         self._close_tab(MediaTabWidget)
-        index = tab_widget_manager.addTab(tab_widget,vo.name)
-        #tab_widget_manager.setCurrentWidget(tab_widget)
+        index=tab_widget_manager.addTab(tab_widget,vo.name)
+        # tab_widget_manager.setCurrentWidget(tab_widget)
         tab_widget_manager.setCurrentIndex(index)
+
+
+
 
 
 
