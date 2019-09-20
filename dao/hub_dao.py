@@ -1,7 +1,7 @@
 import itertools
 
-from dao import db,HubEntity,HubModelEntity, IntegrityError
-from vo import HubVO,HubModelVO
+from dao import db, HubEntity, HubModelEntity
+from vo import HubVO, HubModelVO
 
 
 class HubDao:
@@ -10,16 +10,17 @@ class HubDao:
 
     @db.atomic()
     def save(self, vo: HubVO):
-        hub =HubEntity.create(
+        hub = HubEntity.create(
             path=vo.path,
             author=vo.author
         )
-        id =hub.get_id()
+        id = hub.get_id()
         data = [(m.name, id) for m in vo.models]
-        HubModelEntity\
-        .insert_many(data,
-         fields=[HubModelEntity.name,
-                 HubModelEntity.hub]).execute()
+        HubModelEntity \
+            .insert_many(data,
+                         fields=[HubModelEntity.name,
+                                 HubModelEntity.hub]).execute()
+
         return id
 
     @db.connection_context()
@@ -38,6 +39,5 @@ class HubDao:
                 model_hub.name = val["model_name"]
                 hub.models.append(model_hub)
             rows.append(hub)
+
         return rows
-
-
