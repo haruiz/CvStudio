@@ -1,8 +1,10 @@
 import os
+import typing
+
 import numpy as np
 
 from PyQt5.QtGui import QIcon, QPixmap, QImage, qRgb
-from PyQt5.QtWidgets import QLayout, QGridLayout, QLayoutItem, QMessageBox
+from PyQt5.QtWidgets import QLayout, QGridLayout, QLayoutItem, QMessageBox, QApplication, QMainWindow
 
 
 class GUIUtilities:
@@ -67,14 +69,15 @@ class GUIUtilities:
                     qim = QImage(im.data, im.shape[1], im.shape[0], im.strides[0], QImage.Format_RGB888);
                     return qim.copy() if copy else qim
                 elif im.shape[2] == 4:
-                    qim=QImage(im.data,im.shape[1],im.shape[0],im.strides[0],QImage.Format_ARGB32);
+                    qim = QImage(im.data, im.shape[1], im.shape[0], im.strides[0], QImage.Format_ARGB32);
                     return qim.copy() if copy else qim
 
     @staticmethod
-    def findMainWindow() -> typing.Union[QMainWindow,None]:
+    def findMainWindow() -> typing.Union[QMainWindow, None]:
         # Global function to find the (open) QMainWindow in application
-        app=QApplication.instance()
+        app = QApplication.instance()
         for widget in app.topLevelWidgets():
-            if isinstance(widget,QMainWindow):
+            if isinstance(widget, QMainWindow):
                 return widget
+
         return None
