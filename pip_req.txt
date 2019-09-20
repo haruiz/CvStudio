@@ -3,9 +3,6 @@ cffi==1.12.3
 dask==2.4.0
 hurry.filesize==0.9
 imutils==0.5.3
-mkl-fft==1.0.14
-mkl-random==1.0.2
-mkl-service==2.3.0
 more-itertools==7.2.0
 numpy==1.17.2
 olefile==0.46
@@ -19,7 +16,5 @@ PyQt5-sip==4.19.19
 PyQt5Designer==5.10.1
 six==1.12.0
 toolz==0.10.0
-torch==1.2.0
-torchvision==0.4.0
 traits==5.1.2
 wincertstore==0.2
