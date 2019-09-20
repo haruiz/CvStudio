@@ -5,5 +5,5 @@ class TfClient(HubClient):
     def __init__(self):
         super(TfClient, self).__init__()
 
-    def list_models(self, uri: str):
+    def fetch_model(self, repo: str, *args, **kwargs):
         raise NotImplementedError

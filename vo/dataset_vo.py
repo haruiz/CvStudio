@@ -1,5 +1,4 @@
-
-class DatasetVO():
+class DatasetVO:
     def __init__(self):
         self._id = None
         self._name = ""
@@ -10,7 +9,7 @@ class DatasetVO():
 
     @property
     def size(self):
-        return  self._size
+        return self._size
 
     @size.setter
     def size(self, value):
@@ -55,5 +54,3 @@ class DatasetVO():
     @data_type.setter
     def data_type(self, value):
         self._data_type = value
-
-
