@@ -1,11 +1,14 @@
+import itertools
 import os
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool,QSize,QObject,pyqtSignal
 from PyQt5.QtWidgets import QScrollArea,QWidget,QMessageBox,QDialog,QTabWidget
 
+from dao import AnnotaDao
 from dao.dataset_dao import DatasetDao
 from decor import gui_exception,work_exception
+from schemas import DatasetSchema
 from util import GUIUtilities,Worker,FileUtilities
 from view.forms import DatasetForm
 from .tab_media import MediaTabWidget
@@ -15,7 +18,7 @@ from .loading_dialog import QLoadingDialog
 from .response_grid import ResponseGridLayout
 from .image_button import ImageButton
 from hurry.filesize import size, alternative
-
+import json
 
 class DatasetGridWidget(QWidget,QObject):
     new_dataset_action_signal = pyqtSignal()
@@ -23,6 +26,7 @@ class DatasetGridWidget(QWidget,QObject):
     delete_dataset_action_signal=pyqtSignal(DatasetVO)
     refresh_dataset_action_signal = pyqtSignal(DatasetVO)
     edit_dataset_action_signal = pyqtSignal(DatasetVO)
+    download_anno_action_signal=pyqtSignal(DatasetVO)
 
     def __init__(self, parent=None):
         super(DatasetGridWidget, self).__init__(parent)
@@ -44,25 +48,33 @@ class DatasetGridWidget(QWidget,QObject):
         card_widget: GridCard = GridCard(debug=False)
         card_widget.label = "{} \n {}".format(ds.name, size(ds.size, system=alternative) if ds.size else "0 MB")
         btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
+        btn_delete.setToolTip("Delete dataset")
         btn_edit=ImageButton(GUIUtilities.get_icon("edit.png"),size=QSize(15,15))
+        btn_edit.setToolTip("Edit dataset")
         btn_refresh=ImageButton(GUIUtilities.get_icon("refresh.png"),size=QSize(15,15))
-        card_widget.add_buttons([btn_delete,btn_edit,btn_refresh])
+        btn_refresh.setToolTip("Refresh dataset")
+        btn_download_annotations=ImageButton(GUIUtilities.get_icon("download.png"),size=QSize(15,15))
+        btn_download_annotations.setToolTip("Download annotations")
+
+        card_widget.add_buttons([btn_delete,btn_edit,btn_refresh, btn_download_annotations])
         #icon_file="images_folder.png" if ds.data_type == "Images" else "videos_folder.png"
         icon_file = "folder_empty.png"
         icon=GUIUtilities.get_icon(icon_file)
         # events
-        btn_delete.clicked.connect(lambda evt: self.btn_delete_dataset_on_click(ds))
-        btn_edit.clicked.connect(lambda evt: self.btn_edit_dataset_on_click(ds))
+        btn_delete.clicked.connect(lambda: self.delete_dataset_action_signal.emit(ds))
+        btn_edit.clicked.connect(lambda: self.edit_dataset_action_signal.emit(ds))
+        btn_download_annotations.clicked.connect(lambda: self.download_anno_action_signal.emit(ds))
         card_widget.body=ImageButton(icon)
-        btn_refresh.clicked.connect(lambda evt: self.btn_refresh_dataset_on_click(ds))
-        card_widget.body.doubleClicked.connect(lambda evt: self.btn_open_dataset_on_click(ds))
+        btn_refresh.clicked.connect(lambda: self.refresh_dataset_action_signal.emit(ds))
+        card_widget.body.doubleClicked.connect(lambda evt: self.open_dataset_action_signal.emit(ds))
+
         return card_widget
 
     def create_new_ds_button(self):
         new_dataset_widget: GridCard=GridCard(with_actions=False,with_title=False)
         btn_new_dataset=ImageButton(GUIUtilities.get_icon("new_folder.png"))
         new_dataset_widget.body=btn_new_dataset
-        btn_new_dataset.clicked.connect(self.btn_new_dataset_on_click)
+        btn_new_dataset.clicked.connect(lambda : self.new_dataset_action_signal.emit())
         return new_dataset_widget
 
     def bind(self) -> None:
@@ -75,20 +87,7 @@ class DatasetGridWidget(QWidget,QObject):
         self.grid_layout.widgets = cards_list
         super(DatasetGridWidget, self).update()
 
-    def btn_new_dataset_on_click(self):
-        self.new_dataset_action_signal.emit()
 
-    def btn_delete_dataset_on_click(self,vo: DatasetVO):
-        self.delete_dataset_action_signal.emit(vo)
-
-    def btn_refresh_dataset_on_click(self,vo: DatasetVO):
-        self.refresh_dataset_action_signal.emit(vo)
-
-    def btn_open_dataset_on_click(self,vo: DatasetVO):
-        self.open_dataset_action_signal.emit(vo)
-
-    def btn_edit_dataset_on_click(self,vo: DatasetVO):
-        self.edit_dataset_action_signal.emit(vo)
 
 
 
@@ -98,17 +97,19 @@ class DatasetTabWidget(QScrollArea):
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.widgets_grid=DatasetGridWidget()
-        self.widgets_grid.new_dataset_action_signal.connect(self.btn_new_dataset_on_slot)
-        self.widgets_grid.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_slot)
-        self.widgets_grid.refresh_dataset_action_signal.connect(self.refresh_dataset_action_slot)
-        self.widgets_grid.edit_dataset_action_signal.connect(self.edit_dataset_action_slot)
-        self.widgets_grid.open_dataset_action_signal.connect(self.open_dataset_action_slot)
-        self.setWidget(self.widgets_grid)
+        self.datasets_grid=DatasetGridWidget()
+        self.datasets_grid.new_dataset_action_signal.connect(self.btn_new_dataset_on_slot)
+        self.datasets_grid.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_slot)
+        self.datasets_grid.refresh_dataset_action_signal.connect(self.refresh_dataset_action_slot)
+        self.datasets_grid.edit_dataset_action_signal.connect(self.edit_dataset_action_slot)
+        self.datasets_grid.open_dataset_action_signal.connect(self.open_dataset_action_slot)
+        self.datasets_grid.download_anno_action_signal.connect(self.download_annot_action_slot)
+        self.setWidget(self.datasets_grid)
         self.setWidgetResizable(True)
         self.thread_pool=QThreadPool()
         self.loading_dialog=QLoadingDialog()
         self.ds_dao = DatasetDao()
+        self.annot_dao = AnnotaDao()
         self.load()
 
     # def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
@@ -130,8 +131,8 @@ class DatasetTabWidget(QScrollArea):
             data,error=result
             if error:
                 raise error
-            self.widgets_grid.data_source = data
-            self.widgets_grid.bind()
+            self.datasets_grid.data_source = data
+            self.datasets_grid.bind()
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
         self.thread_pool.start(worker)
@@ -184,6 +185,26 @@ class DatasetTabWidget(QScrollArea):
         index=tab_widget_manager.addTab(tab_widget,vo.name)
         # tab_widget_manager.setCurrentWidget(tab_widget)
         tab_widget_manager.setCurrentIndex(index)
+
+    @gui_exception
+    def download_annot_action_slot(self, vo: DatasetVO):
+        @work_exception
+        def do_work():
+            results=self.annot_dao.fetch_all_by_dataset(vo.id)
+            return results,None
+        @gui_exception
+        def done_work(result):
+            data,error=result
+            if error:
+                raise error
+            groups = itertools.groupby(data, lambda x: x["image"])
+            for key, annotations in groups:
+                for annot in list(annotations):
+                    print(annot)
+
+        worker=Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self.thread_pool.start(worker)
 
 
 
