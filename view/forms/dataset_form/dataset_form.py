@@ -20,7 +20,7 @@ class DatasetForm(QDialog, Ui_Base_DatasetDialog):
         if self._value:
             self.nameLineEdit.setText(self._value.name)
             self.descriptionEditText.setPlainText(self._value.description)
-            self.typeComboBox.setCurrentText(self._value.data_type)
+            #self.type.setCurrentText(self._value.data_type)
 
     @property
     def value(self)-> DatasetVO:
@@ -41,7 +41,7 @@ class DatasetForm(QDialog, Ui_Base_DatasetDialog):
             vo = self._value
         vo.name=self.nameLineEdit.text()
         vo.description=self.descriptionEditText.toPlainText()
-        vo.data_type=self.typeComboBox.currentText()
+        #vo.data_type=self.typeComboBox.currentText()
         return QDialog.accept(self)
 
     def reject(self) -> None:

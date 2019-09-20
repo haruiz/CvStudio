@@ -179,7 +179,7 @@ class DatasetTabWidget(QScrollArea):
     @QtCore.pyqtSlot(DatasetVO)
     def open_dataset_action_slot(self,vo: DatasetVO):
         tab_widget_manager: QTabWidget=self.window().tab_widget_manager
-        tab_widget=MediaTabWidget(vo.id)
+        tab_widget=MediaTabWidget(vo)
         self._close_tab(MediaTabWidget)
         index=tab_widget_manager.addTab(tab_widget,vo.name)
         # tab_widget_manager.setCurrentWidget(tab_widget)

@@ -7,7 +7,7 @@ import dask
 from PyQt5 import QtGui,QtCore
 from PyQt5.QtCore import QObject,QSize,pyqtSignal,QThreadPool
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget,QGridLayout,QLabel,QFrame,QLayoutItem,QVBoxLayout
+from PyQt5.QtWidgets import QWidget,QGridLayout,QLabel,QFrame,QLayoutItem,QVBoxLayout,QPushButton
 from dask import delayed
 
 from util import GUIUtilities,MiscUtilities,Worker,FileUtilities,VideoUtilities
@@ -15,6 +15,7 @@ from view.widgets.image_button import ImageButton
 from view.widgets.loading_dialog import QLoadingDialog
 from .base_gallery import Ui_Gallery
 from .card import GalleryCard,ImageCard,VideoCard
+from .gallery_action import GalleryAction
 
 
 class GalleryViewMode(Enum):
@@ -108,16 +109,18 @@ class GalleryLayout(QGridLayout, QObject):
     def clear(self):
         GUIUtilities.clear_layout(self) # clear the gridlayout
 
+
 class Gallery(QWidget, Ui_Gallery, QObject):
     doubleClicked = pyqtSignal(GalleryCard,QWidget)
     filesDropped = pyqtSignal(list)
+    cardActionClicked = pyqtSignal(str, object)
 
     def __init__(self, parent=None):
         super(Gallery, self).__init__(parent)
         self.setupUi(self)
         self.setup_toolbar()
         self.setup_paginator()
-        self._items: [] = set()
+        self._items: [] = []
         self._pages = []
         self._page_size = 100
         self._loading_dialog = QLoadingDialog()
@@ -126,9 +129,9 @@ class Gallery(QWidget, Ui_Gallery, QObject):
         self.setAcceptDrops(True)
         self.center_widget=None
         self.center_layout=None
+        self._content_type = "Images"
         self._tag = None
-
-
+        self._actions = []
 
     def setup_toolbar(self):
         uncheck_all_icon=GUIUtilities.get_icon("uncheck_all.png")
@@ -140,6 +143,21 @@ class Gallery(QWidget, Ui_Gallery, QObject):
         self.btn_check_all.clicked.connect(self.btn_check_all_on_click_slot)
         self.btn_uncheck_all.clicked.connect(self.btn_uncheck_all_on_click_slot)
 
+    @property
+    def actions(self):
+        return self._actions
+
+    @actions.setter
+    def actions(self, value):
+        self._actions = value
+
+    @property
+    def content_type(self):
+        return self._content_type
+
+    @content_type.setter
+    def content_type(self, value):
+        self._content_type = value
 
     def enable_paginator(self, val):
         self.btn_check_all.setEnabled(val)
@@ -180,7 +198,7 @@ class Gallery(QWidget, Ui_Gallery, QObject):
 
     @items.setter
     def items(self,value):
-        self._items = self._items.union(value)
+        self._items = value
 
     @property
     def page_size(self):
@@ -256,13 +274,14 @@ class Gallery(QWidget, Ui_Gallery, QObject):
         for f in files:
             if os.path.isfile(f):
                 mime_type, encoding = mimetypes.guess_type(f) #magic.from_file(f,mime=True)
-                if mime_type.find("video") != -1 or mime_type.find("image") != -1:
+                if mime_type.find("video") != -1 and self.content_type == "Videos":
+                    valid_files.append(f)
+                elif mime_type.find("image") != -1 and self.content_type == "Images":
                     valid_files.append(f)
         valid_files = sorted(valid_files, key=lambda v: os.path.basename(v))
         self.filesDropped.emit(valid_files)
 
     def bind(self):
-
         self.update_pager()
         if len(self._pages) > 0:
             self.center_widget=QWidget()
@@ -275,11 +294,8 @@ class Gallery(QWidget, Ui_Gallery, QObject):
             def do_work(progress_callback):
                 page = self._curr_page
                 items = self._pages[page]
-                images = {}
-                videos = {}
                 for item in items:
                     file_path = item.file_path
-                    file_size = item.file_size
                     file_type = FileUtilities.infer_media_type(file_path)
                     if file_type == "video":
                         result = dask.compute(*[
@@ -308,26 +324,26 @@ class Gallery(QWidget, Ui_Gallery, QObject):
                     image_card=ImageCard()
                     image_card.tag=item
                     image_card.source=thumbnail
+                    image_card.file_path = file_path
                     image_card.label.setText("({0}px / {1}px)".format(w,h))
                     image_card.setFixedHeight(240)
                     image_card.doubleClicked.connect(self.gallery_card_double_click)
-                    btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
-                    btn_edit=ImageButton(GUIUtilities.get_icon("annotations.png"),size=QSize(15,15))
-                    btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
-                    image_card.add_buttons([btn_delete,btn_edit,btn_view])
+                    image_card.add_buttons(self.actions)
+                    if len(self.actions) > 0:
+                        image_card.actionClicked.connect(lambda name, item: self.cardActionClicked.emit(name,item))
                     self.center_layout.add_item(image_card)
                 elif media_type == "video":
                     video_dur=args[3]
                     video_card=VideoCard()
                     video_card.tag=item
+                    video_card.file_path=file_path
                     video_card.duration=video_dur
                     video_card.label.setText(strftime("%H:%M:%S",gmtime(video_dur)))
                     video_card.source=thumbnail
                     video_card.setFixedHeight(240)
-                    # video_card.doubleClicked.connect(self.gallery_card_double_click)
-                    btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
-                    btn_view=ImageButton(GUIUtilities.get_icon("search.png"),size=QSize(15,15))
-                    video_card.add_buttons([btn_delete,btn_view])
+                    video_card.add_buttons(self.actions)
+                    if len(self.actions) > 0:
+                        video_card.actionClicked.connect(lambda name,item: self.cardActionClicked.emit(name,item))
                     self.center_layout.add_item(video_card)
 
             def done_work():
