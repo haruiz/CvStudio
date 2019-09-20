@@ -1,18 +1,16 @@
-from datetime import  datetime
-
 import typing
 
-from dao import db,AnnotationEntity,LabelEntity
-from vo import AnnotaVO,LabelVO
-from peewee import *
+from dao import db, AnnotationEntity, LabelEntity
+from vo import AnnotaVO, LabelVO
+
 
 class AnnotaDao:
     def __init__(self):
         pass
 
     @db.connection_context()
-    def save(self,param: typing.Any):
-        if isinstance(param,AnnotaVO):
+    def save(self, param: typing.Any):
+        if isinstance(param, AnnotaVO):
             vo = param
             return AnnotationEntity.create(
                 entry=vo.entry,
@@ -20,54 +18,50 @@ class AnnotaDao:
                 points=vo.points,
                 kind=vo.kind
             )
-        elif isinstance(param,list):
+        elif isinstance(param, list):
             with db.atomic():
-                rows=[
+                rows = [
                     (vo.entry,
                      vo.label,
                      vo.points,
                      vo.kind)
                     for vo in param]
                 AnnotationEntity \
-                    .insert_many(rows, fields=
-                        ["entry",
-                         "label",
-                         "points",
-                         "kind"]).execute()
+                    .insert_many(rows, fields= ["entry", "label", "points", "kind"]) \
+                    .execute()
 
     @db.connection_context()
     def delete(self, entity_id: int):
-        query =(AnnotationEntity
-                .delete()
-                .where(AnnotationEntity.entry == entity_id))
+        query = (AnnotationEntity
+                 .delete()
+                 .where(AnnotationEntity.entry == entity_id))
         query.execute()
 
     @db.connection_context()
-    def fetch_all(self,entity_id: int):
-        a=AnnotationEntity.alias()
-        l=LabelEntity.alias()
-        query=(
-            a.select(
-                a.id.alias("annot_id"),
-                a.entry.alias("annot_entry"),
-                a.kind.alias("annot_kind"),
-                a.points.alias("annot_points"),
-                l.id.alias("label_id"),
-                l.name.alias("label_name"),
-                l.color.alias("label_color")
-                )
-                .join(l,on=(a.label == l.id), join_type="LEFT")
-                .where(a.entry == entity_id)
+    def fetch_all(self, entity_id: int):
+        anns = AnnotationEntity.alias()
+        lbls = LabelEntity.alias()
+        query = (
+            anns.select(
+                anns.id.alias("annot_id"),
+                anns.entry.alias("annot_entry"),
+                anns.kind.alias("annot_kind"),
+                anns.points.alias("annot_points"),
+                lbls.id.alias("label_id"),
+                lbls.name.alias("label_name"),
+                lbls.color.alias("label_color")
+            )
+                .join(lbls, on=(anns.label == lbls.id), join_type="LEFT")
+                .where(anns.entry == entity_id)
         )
 
-
         cursor = query.dicts().execute()
-        result=[]
+        result = []
         for row in cursor:
-            annot=AnnotaVO()
+            annot = AnnotaVO()
             annot.id = row["annot_id"]
             annot.entry = row["annot_entry"]
-            annot.kind=row["annot_kind"]
+            annot.kind = row["annot_kind"]
             annot.points = row["annot_points"]
             annot.label = None
             if row["label_id"]:
@@ -77,6 +71,5 @@ class AnnotaDao:
                 label.color = row["label_color"]
                 annot.label = label
             result.append(annot)
+
         return result
-
-

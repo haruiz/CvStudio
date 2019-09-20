@@ -5,7 +5,6 @@ class AnnotaVO:
         self._points = None
         self._kind = None
 
-
     @property
     def points(self):
         return self._points
@@ -36,4 +35,4 @@ class AnnotaVO:
 
     @kind.setter
     def kind(self, value):
-        self._kind= value
+        self._kind = value

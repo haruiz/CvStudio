@@ -1,6 +1,6 @@
 class HubVO:
     def __init__(self):
-        self._path =""
+        self._path = ""
         self._source = ""
         self._author = ""
         self._models = []
@@ -10,7 +10,7 @@ class HubVO:
         return self._path
 
     @path.setter
-    def path(self,value):
+    def path(self, value):
         self._path = value
 
     @property
@@ -36,9 +36,3 @@ class HubVO:
     @models.setter
     def models(self, value):
         self._models = value
-
-
-
-
-
-
