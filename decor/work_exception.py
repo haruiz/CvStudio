@@ -1,10 +1,4 @@
-import logging
-import sys
-# from pprint import  pprint
-import traceback
 from functools import wraps
-
-from util import GUIUtilities
 
 
 def work_exception(function):
@@ -12,7 +6,8 @@ def work_exception(function):
     A decorator that wraps the passed in function and logs
     exceptions should one occur
     """
-    @wraps( function )
+
+    @wraps(function)
     def wrapper(*args, **kwargs):
         try:
             if args or kwargs:

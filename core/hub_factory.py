@@ -6,7 +6,7 @@ from .tf_client import TfClient
 
 class HubFactory:
     @classmethod
-    def create(cls, provider = HubProvider.PyTorch) -> HubClient:
+    def create(cls, provider=HubProvider.PyTorch) -> HubClient:
         if provider == HubProvider.PyTorch:
             return PyTorchClient()
         elif provider == HubProvider.TensorFlow:

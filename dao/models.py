@@ -1,6 +1,6 @@
 from peewee import *
 
-db = SqliteDatabase("studio.db",pragmas={
+db = SqliteDatabase("studio.db", pragmas={
     'journal_mode': 'wal',
     'cache_size': -1 * 64000,  # 64MB
     'foreign_keys': 1,
@@ -19,51 +19,58 @@ class DatasetEntity(BaseModel):
     folder = TextField()
     date = DateField()
     data_type = CharField(default="Images")
+
     class Meta:
-        table_name='dataset'
+        table_name = 'dataset'
 
 
 class DatasetEntryEntity(BaseModel):
-    file_path=CharField()
-    file_size=CharField()
+    file_path = CharField()
+    file_size = CharField()
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
+
     class Meta:
-        indexes=(
-            (("file_path","dataset"),True),
+        indexes = (
+            (("file_path", "dataset"), True),
         )
-        table_name='media'
+        table_name = 'media'
+
 
 class LabelEntity(BaseModel):
     name = CharField()
     description = CharField(null=True)
     color = CharField(null=None)
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
+
     class Meta:
-        table_name='label'
+        table_name = 'label'
 
 
 class HubEntity(BaseModel):
     path = CharField(unique=True)
     author = CharField(null=True)
+
     class Meta:
-        table_name='hub'
+        table_name = 'hub'
 
 
 class HubModelEntity(BaseModel):
     name = CharField(unique=True)
     description = CharField(null=True)
-    hub= ForeignKeyField(HubEntity)
+    hub = ForeignKeyField(HubEntity)
+
     class Meta:
-        table_name='hub_model'
+        table_name = 'hub_model'
 
 
 class AnnotationEntity(BaseModel):
     entry = ForeignKeyField(DatasetEntryEntity, on_delete="CASCADE")
-    label=ForeignKeyField(LabelEntity, null=True, on_delete="CASCADE")
-    points = CharField(null=True)
+    label = ForeignKeyField(LabelEntity, null=True, on_delete="CASCADE")
+    points = CharField()
     kind = CharField()
+
     class Meta:
-        table_name="annotation"
+        table_name = "annotation"
 
 
 def create_tables():
@@ -76,7 +83,6 @@ def create_tables():
             LabelEntity,
             AnnotationEntity
         ]
-        #db.drop_tables(models)
+        # db.drop_tables(models)
         db.create_tables(models)
         db.execute_sql("PRAGMA foreign_keys=ON")
-
