@@ -58,6 +58,10 @@ class DatasetDao:
             raise Exception("one or more files have already been loaded into this dataset")
 
     @db.connection_context()
+    def delete_entry(self, id):
+        return DatasetEntryEntity.delete_by_id(id)
+
+    @db.connection_context()
     def fetch_all_with_size(self):
         ds = DatasetEntity.alias("ds")
         m = DatasetEntryEntity.alias("m")

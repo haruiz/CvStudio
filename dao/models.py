@@ -18,7 +18,7 @@ class DatasetEntity(BaseModel):
     description = TextField()
     folder = TextField()
     date = DateField()
-    data_type = CharField()
+    data_type = CharField(default="Images")
     class Meta:
         table_name='dataset'
 

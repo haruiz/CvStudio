@@ -1,18 +1,22 @@
 import os
 import typing
 from PyQt5 import QtCore,QtGui
-from PyQt5.QtCore import QObject,pyqtSignal,pyqtSlot
+from PyQt5.QtCore import QObject,pyqtSignal,pyqtSlot,QSize
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget,QPushButton,QLabel
 from abc  import abstractmethod
 from util import GUIUtilities
+from ..image_button import ImageButton
+from .gallery_action import GalleryAction
 from .label_hovered import LabelHovered
 from .base_card import Ui_GalleryCard
-from .video_viewer import VideoViewer
+from .video_dialog import VideoDialog
+from .image_dialog import ImageDialog
 
 
 class GalleryCard(QWidget, Ui_GalleryCard, QObject):
     doubleClicked = pyqtSignal(QWidget)
+    actionClicked = pyqtSignal(str,object)
     selected_style ="""
                QFrame {
                    background-color: gray;
@@ -36,6 +40,15 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
         self.buttons_layout.setAlignment(QtCore.Qt.AlignCenter)
         self._is_selected = False
         self._tag = None
+        self._file_path = None
+
+    @property
+    def file_path(self):
+        return self._file_path
+
+    @file_path.setter
+    def file_path(self, value):
+        self._file_path = value
 
     @property
     @abstractmethod
@@ -99,13 +112,26 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
                 self.is_selected=not self.is_selected
 
     def add_buttons(self, args: typing.Any):
-        if isinstance(args,QPushButton):
-            self.buttons_layout.addWidget(args)
+        if isinstance(args,GalleryAction):
+            button = ImageButton(args.icon)
+            button.tag = args.name
+            button.setToolTip(args.tooltip)
+            button.clicked.connect(self.action_clicked_slot)
+            self.buttons_layout.addWidget(button)
         else:
-            for btn in args:
-                if isinstance(btn, QPushButton):
-                    btn.setFixedWidth(30)
-                    self.buttons_layout.addWidget(btn)
+            for action in args:
+                if isinstance(action, GalleryAction):
+                    button=ImageButton(action.icon, size=QSize(15,15))
+                    button.tag= action.name
+                    button.setToolTip(action.tooltip)
+                    button.clicked.connect(self.action_clicked_slot)
+                    button.setFixedWidth(30)
+                    self.buttons_layout.addWidget(button)
+
+    def action_clicked_slot(self):
+        self.actionClicked.emit(self.sender().tag, self.tag)
+
+
 
 
 class ImageCard(GalleryCard):
@@ -120,7 +146,9 @@ class ImageCard(GalleryCard):
 
     @pyqtSlot(QLabel)
     def hover_timeout_slot(self):
-        pass
+        if self.file_path:
+            viewer=ImageDialog(self.file_path)
+            viewer.exec_()
 
     @property
     def source(self):
@@ -145,8 +173,9 @@ class   VideoCard(GalleryCard):
 
     @pyqtSlot(QLabel)
     def hover_timeout_slot(self):
-        viewer = VideoViewer(self.tag)
-        viewer.exec_()
+        if self.file_path:
+            viewer = VideoDialog(self.tag)
+            viewer.exec_()
 
     @property
     def source(self):

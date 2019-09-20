@@ -96,9 +96,9 @@ class VideoViewerContainer(QWidget):
         self.shadow.setOffset(8)
         window.setGraphicsEffect(self.shadow)
 
-class VideoViewer(QDialog):
+class VideoDialog(QDialog):
     def __init__(self,video_path,  parent=None):
-        super(VideoViewer, self).__init__(parent)
+        super(VideoDialog,self).__init__(parent)
         #self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.resize(400,400)
         position=self.cursor().pos()
