@@ -60,7 +60,7 @@ class HubModelEntity(BaseModel):
 class AnnotationEntity(BaseModel):
     entry = ForeignKeyField(DatasetEntryEntity, on_delete="CASCADE")
     label=ForeignKeyField(LabelEntity, null=True, on_delete="CASCADE")
-    points = CharField()
+    points = CharField(null=True)
     kind = CharField()
     class Meta:
         table_name="annotation"

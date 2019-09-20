@@ -360,7 +360,8 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self._loading_dialog=QLoadingDialog()
         self._source = None
         self._image = None
-        self.images_list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection )
+        #self.images_list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection )
+        self.images_list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
         self.images_list_widget.currentItemChanged.connect(self.image_list_sel_changed_slot)
 
         self.treeview_models=ModelsTreeview()
@@ -372,7 +373,10 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.treeview_labels.action_click.connect(self.trv_labels_action_click_slot)
         self.tree_view_labels_layout.addWidget(self.treeview_labels)
         self.treeview_labels.selectionModel().selectionChanged.connect(self.default_label_changed_slot)
+        #window = GUIUtilities.findMainWindow()
+        #window.keyPressed.connect(self.window_keyPressEvent)
         self.create_actions_bar()
+
 
     def default_label_changed_slot(self, selection: QItemSelection):
         selected_rows =self.treeview_labels.selectionModel().selectedRows(2)
@@ -529,14 +533,21 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.load_models()
         self.load_labels()
 
-    def keyPressEvent(self,event: QtGui.QKeyEvent) -> None:
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         row = self.images_list_widget.currentRow()
+        last_index = self.images_list_widget.count() - 1
         if event.key() == QtCore.Qt.Key_A:
             self.save_annotations()
-            self.images_list_widget.setCurrentRow(row-1)
+            if row > 0:
+                self.images_list_widget.setCurrentRow(row-1)
+            else:
+                self.images_list_widget.setCurrentRow(last_index)
         if event.key() == QtCore.Qt.Key_D:
             self.save_annotations()
-            self.images_list_widget.setCurrentRow(row+1)
+            if row < last_index:
+                self.images_list_widget.setCurrentRow(row+1)
+            else:
+                self.images_list_widget.setCurrentRow(0)
         if event.key() == QtCore.Qt.Key_W:
             self.viewer.selection_mode=SELECTION_MODE.POLYGON
         if event.key() == QtCore.Qt.Key_S:

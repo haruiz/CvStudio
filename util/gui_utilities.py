@@ -1,7 +1,8 @@
 import os
 
+import typing
 from PyQt5.QtGui import QIcon,QPixmap,QImage,qRgb
-from PyQt5.QtWidgets import QLayout,QGridLayout,QLayoutItem,QMessageBox
+from PyQt5.QtWidgets import QLayout,QGridLayout,QLayoutItem,QMessageBox,QMainWindow,QApplication
 import numpy as np
 
 class GUIUtilities:
@@ -68,3 +69,12 @@ class GUIUtilities:
                 elif im.shape[2] == 4:
                     qim=QImage(im.data,im.shape[1],im.shape[0],im.strides[0],QImage.Format_ARGB32);
                     return qim.copy() if copy else qim
+
+    @staticmethod
+    def findMainWindow() -> typing.Union[QMainWindow,None]:
+        # Global function to find the (open) QMainWindow in application
+        app=QApplication.instance()
+        for widget in app.topLevelWidgets():
+            if isinstance(widget,QMainWindow):
+                return widget
+        return None

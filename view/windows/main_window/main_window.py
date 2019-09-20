@@ -1,9 +1,10 @@
 from PyQt5 import QtCore,QtGui
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QIcon,QKeyEvent
 from PyQt5.QtWidgets import QMainWindow,QWidget,QHBoxLayout,QGraphicsDropShadowEffect,QVBoxLayout,QStatusBar,QTabWidget, \
     QLabel
 from util import GUIUtilities
-from view.widgets import LateralMenu,LateralMenuItemLoc,TopBar,DatasetTabWidget
+from view.widgets import LateralMenu,LateralMenuItemLoc,TopBar,DatasetTabWidget,SettingsTabWidget
 from view.widgets.loading_dialog import QLoadingDialog
 from .base_main_window import Ui_MainWindow
 
@@ -26,6 +27,7 @@ class MainWindowContainer(QWidget):
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
+    keyPressed = pyqtSignal(QKeyEvent)
     def __init__(self,parent=None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
@@ -45,7 +47,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.frame_lateral_bar.setLayout(QVBoxLayout())
         self.frame_lateral_bar.layout().addWidget(self.lateral_menu)
 
-
+    def keyPressEvent(self, evt: QtGui.QKeyEvent) -> None:
+        self.keyPressed.emit(evt)
+        super(MainWindow, self).keyPressEvent(evt)
 
     @QtCore.pyqtSlot(str)
     def item_click_signal_slot(self, object_name):
@@ -58,8 +62,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 raise NotImplementedError
             elif object_name == "models_treeview":
                 raise NotImplementedError
-            elif object_name == "support":
-                raise NotImplementedError
+            elif object_name == "settings":
+                tab_widget=SettingsTabWidget()
+                self.tab_widget_manager.addTab(tab_widget,"Settings")
             elif object_name == "exit":
                 self.close()
         except Exception as ex:
