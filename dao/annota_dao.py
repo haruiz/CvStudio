@@ -1,6 +1,6 @@
 import typing
 
-from dao import db,AnnotationEntity,LabelEntity,DatasetEntryEntity
+from dao import db, AnnotationEntity, LabelEntity, DatasetEntryEntity
 from vo import AnnotaVO, LabelVO
 
 
@@ -100,12 +100,12 @@ class AnnotaDao:
         return result
 
     @db.connection_context()
-    def fetch_all_by_dataset(self,dataset_id: int = None):
-        a=AnnotationEntity.alias("a")
+    def fetch_all_by_dataset(self, dataset_id: int = None):
+        a = AnnotationEntity.alias("a")
         i = DatasetEntryEntity.alias("i")
-        l=LabelEntity.alias("l")
+        l = LabelEntity.alias("l")
 
-        query=(
+        query = (
             a.select(
                 i.file_path.alias("image"),
                 a.kind.alias("annot_kind"),
@@ -113,12 +113,13 @@ class AnnotaDao:
                 l.name.alias("label_name"),
                 l.color.alias("label_color")
             )
-            .join(i, on=(a.entry == i.id))
-            .join(l,on=(a.label == l.id),join_type="LEFT")
-            .where(i.dataset == dataset_id)
+                .join(i, on=(a.entry == i.id))
+                .join(l, on=(a.label == l.id), join_type="LEFT")
+                .where(i.dataset == dataset_id)
         )
-        cursor=query.dicts().execute()
-        result=[]
+        cursor = query.dicts().execute()
+        result = []
         for row in cursor:
             result.append(row)
+
         return result
