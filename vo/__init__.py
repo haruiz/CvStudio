@@ -4,4 +4,4 @@ from .hub_vo import HubVO
 from .hub_model_vo import HubModelVO
 from .label_vo import LabelVO
 from .annota_vo import AnnotaVO
-from .ann_schema_vo import AnnotationSchemaVO
+

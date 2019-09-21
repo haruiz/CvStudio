@@ -1,10 +1,12 @@
+import json
 import os
 import itertools
 from hurry.filesize import size, alternative
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QSize, QObject, pyqtSignal
-from PyQt5.QtWidgets import QScrollArea, QWidget, QMessageBox, QDialog, QTabWidget
+from PyQt5.QtWidgets import QScrollArea,QWidget,QMessageBox,QDialog,QTabWidget,QFileDialog
+from marshmallow import pprint
 
 from dao import AnnotaDao
 from dao.dataset_dao import DatasetDao
@@ -12,11 +14,12 @@ from decor import gui_exception, work_exception
 from util import GUIUtilities, Worker, FileUtilities
 from view.forms import DatasetForm
 from .tab_media import MediaTabWidget
-from vo import DatasetVO, AnnotationSchemaVO
+from vo import DatasetVO
 from .response_grid import GridCard
 from .loading_dialog import QLoadingDialog
 from .response_grid import ResponseGridLayout
 from .image_button import ImageButton
+from schemas import ImageSchemeVO,AnnotSchemeVO,AnnotSchema,ImageScheme
 
 
 class DatasetGridWidget(QWidget, QObject):
@@ -189,13 +192,26 @@ class DatasetTabWidget(QScrollArea):
             if error:
                 raise error
             groups = itertools.groupby(data, lambda x: x["image"])
+            annot_list = []
             for key, annotations in groups:
-                self.tags = []
-                for annot in list(annotations):
-                    self.tags.append(annot)
-                ann_schema = AnnotationSchemaVO(key, self.tags)
-                ann_schema.dump()
-
+                image = ImageSchemeVO()
+                image.path = key
+                for annot_dict in list(annotations):
+                    annot =AnnotSchemeVO()
+                    annot.kind = annot_dict["annot_kind"]
+                    annot.points=annot_dict["annot_points"]
+                    annot.label_name=annot_dict["label_name"]
+                    annot.label_color=annot_dict["label_color"]
+                    image.regions.append(annot)
+                annot_list.append(image)
+            scheme = ImageScheme(many=True)
+            options=QFileDialog.Options()
+            options|=QFileDialog.DontUseNativeDialog
+            default_file = os.path.join(os.path.expanduser('~'), "annotations.json")
+            fileName,_=QFileDialog.getSaveFileName(self,"Export annotations",default_file,"Json Files (*.json)",options=options)
+            if fileName:
+                with open(fileName,'w') as f:
+                    json.dump(scheme.dump(annot_list),f, indent=3)
         worker = Worker(do_work)
         worker.signals.result.connect(done_work)
         self.thread_pool.start(worker)
