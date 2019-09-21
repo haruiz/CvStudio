@@ -88,9 +88,6 @@ class DatasetGridWidget(QWidget,QObject):
         super(DatasetGridWidget, self).update()
 
 
-
-
-
 class DatasetTabWidget(QScrollArea):
     def __init__(self, parent=None):
         super(DatasetTabWidget,self).__init__(parent)
