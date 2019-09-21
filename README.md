@@ -16,7 +16,7 @@ PyTorch CV Studio supports:
     * Using a polygon tool or freehand selection for segmentation tasks.
 * Auto-annotate images with a pretrained model to continue tagging the images by your own.
 
-[Watch a demo video](https://www.youtube.com/watch?v=nA8uMonPXk4&t=27s)
+[Watch a demo video](https://www.youtube.com/watch?v=xtNhWr083lM)
 
 ## Roadmap
 

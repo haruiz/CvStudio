@@ -57,7 +57,7 @@ class HubEntity(BaseModel):
 class HubModelEntity(BaseModel):
     name = CharField(unique=True)
     description = CharField(null=True)
-    hub = ForeignKeyField(HubEntity)
+    hub = ForeignKeyField(HubEntity, on_delete="CASCADE")
 
     class Meta:
         table_name = 'hub_model'
