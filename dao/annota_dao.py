@@ -1,6 +1,6 @@
 import typing
 
-from dao import db, AnnotationEntity, LabelEntity
+from dao import db, AnnotationEntity, LabelEntity, DatasetEntryEntity
 from vo import AnnotaVO, LabelVO
 
 
@@ -27,7 +27,7 @@ class AnnotaDao:
                      vo.kind)
                     for vo in param]
                 AnnotationEntity \
-                    .insert_many(rows, fields= ["entry", "label", "points", "kind"]) \
+                    .insert_many(rows, fields=["entry", "label", "points", "kind"]) \
                     .execute()
 
     @db.connection_context()
@@ -40,36 +40,61 @@ class AnnotaDao:
     @db.connection_context()
     def fetch_all(self, entity_id: int):
         anns = AnnotationEntity.alias()
-        lbls = LabelEntity.alias()
+        lbl = LabelEntity.alias()
         query = (
             anns.select(
                 anns.id.alias("annot_id"),
                 anns.entry.alias("annot_entry"),
                 anns.kind.alias("annot_kind"),
                 anns.points.alias("annot_points"),
-                lbls.id.alias("label_id"),
-                lbls.name.alias("label_name"),
-                lbls.color.alias("label_color")
+                lbl.id.alias("label_id"),
+                lbl.name.alias("label_name"),
+                lbl.color.alias("label_color")
             )
-                .join(lbls, on=(anns.label == lbls.id), join_type="LEFT")
+                .join(lbl, on=(anns.label == lbl.id), join_type="LEFT")
                 .where(anns.entry == entity_id)
         )
 
         cursor = query.dicts().execute()
         result = []
         for row in cursor:
-            annot = AnnotaVO()
-            annot.id = row["annot_id"]
-            annot.entry = row["annot_entry"]
-            annot.kind = row["annot_kind"]
-            annot.points = row["annot_points"]
-            annot.label = None
+            ann_vo = AnnotaVO()
+            ann_vo.id = row["annot_id"]
+            ann_vo.entry = row["annot_entry"]
+            ann_vo.kind = row["annot_kind"]
+            ann_vo.points = row["annot_points"]
+            ann_vo.label = None
             if row["label_id"]:
                 label = LabelVO()
                 label.id = row["label_id"]
                 label.name = row["label_name"]
                 label.color = row["label_color"]
-                annot.label = label
-            result.append(annot)
+                ann_vo.label = label
+            result.append(ann_vo)
+
+        return result
+
+    @db.connection_context()
+    def fetch_all_by_dataset(self, dataset_id: int = None):
+        ann = AnnotationEntity.alias("a")
+        ds_entry = DatasetEntryEntity.alias("i")
+        lbl = LabelEntity.alias("l")
+
+        query = (
+            ann.select(
+                ds_entry.file_path.alias("image"),
+                ann.kind.alias("annot_kind"),
+                ann.points.alias("annot_points"),
+                lbl.name.alias("label_name"),
+                lbl.color.alias("label_color")
+            )
+                .join(ds_entry, on=(ann.entry == ds_entry.id))
+                .join(lbl, on=(ann.label == lbl.id), join_type="LEFT")
+                .where(ds_entry.dataset == dataset_id)
+        )
+        cursor = query.dicts().execute()
+        result = []
+        for row in cursor:
+            result.append(row)
 
         return result
