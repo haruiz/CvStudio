@@ -1,3 +1,2 @@
-from .image_scheme import ImageSchema
-from .annotation_scheme import AnnotationScheme, TagSchema
-from .dataset_scheme import DatasetSchema
+from .annotation_scheme import AnnotSchema, AnnotSchemeVO
+from .image_scheme import ImageScheme, ImageSchemeVO
