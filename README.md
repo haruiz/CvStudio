@@ -47,7 +47,7 @@ PyTorch CV Studio supports:
     
     <img alt="" src="assets/images/pytorch_install_config_2.png"></img>
     
-    > `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch`
+    > `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly`
 * Run and enjoy PyTorchCV Studio: 
   > `python pytorchcv.py`
 
