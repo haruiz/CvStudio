@@ -51,6 +51,10 @@ PyTorch CV Studio supports:
 * Run and enjoy PyTorchCV Studio: 
   > `python pytorchcv.py`
 
+## Documentation
+
+Check out the [wiki](https://github.com/haruiz/PytorchCvStudio/wiki).
+
 ## How to contribute
 
 Send a pull request.
