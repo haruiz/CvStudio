@@ -2,6 +2,7 @@ from peewee import *
 
 from datetime import datetime
 from dao import db, DatasetEntity, DatasetEntryEntity
+from util import MiscUtilities
 from vo import DatasetVO,DatasetEntryVO,LabelVO
 
 
@@ -52,10 +53,10 @@ class DatasetDao:
     @db.atomic()
     def tag_entries(self, entries: [DatasetEntryVO], label: LabelVO):
         ids = [vo.id for vo in entries]
-        rows=(DatasetEntryEntity
-                    .update(label = label.id)
-                        .where(DatasetEntryEntity.id.in_(ids)).execute())
-        return rows
+        for chunk in MiscUtilities.chunk(ids, 100):
+            rows=(DatasetEntryEntity
+                        .update(label = label.id)
+                            .where(DatasetEntryEntity.id.in_(list(chunk))).execute())
 
     @db.atomic()
     def add_entries(self, entries: [DatasetEntryVO]):

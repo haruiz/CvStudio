@@ -359,6 +359,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         # self.center_layout.addWidget(self._label_background,0,0,QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
         self._label=QLabel()
+        self._label.setVisible(False)
         self._label.setMargin(5)
         self._label.setStyleSheet('''
             QLabel{
@@ -584,7 +585,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 self._label.setVisible(True)
                 self._label.setText(label_name)
             else:
-                self._label.setVisible(True)
+                self._label.setVisible(False)
                 self._label.setText("")
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
