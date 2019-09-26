@@ -83,8 +83,8 @@ class MediaTabWidget(QWidget):
         tab_widget=ImageViewerWidget()
         tab_widget.source=item
         tab_widget.bind()
-        tab_widget_manager.addTab(tab_widget,item.file_path)
-        tab_widget_manager.setCurrentIndex(1)
+        index = tab_widget_manager.addTab(tab_widget,item.file_path)
+        tab_widget_manager.setCurrentIndex(index)
 
     @gui_exception
     def card_action_clicked_slot(self,action_name: str,item: DatasetEntryVO):
