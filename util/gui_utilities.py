@@ -17,7 +17,6 @@ class GUIUtilities:
     @staticmethod
     def get_image(img):
         resource_path = os.path.abspath("./assets/icons/dark/{}".format(img))
-
         return QPixmap(resource_path)
 
     @staticmethod
