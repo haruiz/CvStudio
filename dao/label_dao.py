@@ -1,4 +1,4 @@
-from dao import db, LabelEntity
+from dao import db,LabelEntity,DatasetEntryEntity
 from vo import LabelVO
 
 
@@ -29,8 +29,8 @@ class LabelDao:
 
         return result
 
-    @db.connection_context()
+    @db.atomic()
     def delete(self, id: int):
-        results = LabelEntity.delete_by_id(id)
-
-        return results
+        result = LabelEntity.delete_by_id(id)
+        DatasetEntryEntity.update(label=None).where(DatasetEntryEntity.label == id).execute()
+        return result

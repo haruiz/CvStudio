@@ -35,7 +35,7 @@ class AnnotaDao:
         query = (AnnotationEntity
                  .delete()
                  .where(AnnotationEntity.entry == entity_id))
-        query.execute()
+        return query.execute()
 
     @db.connection_context()
     def fetch_all(self, entity_id: int):
@@ -54,7 +54,6 @@ class AnnotaDao:
                 .join(lbl, on=(anns.label == lbl.id), join_type="LEFT")
                 .where(anns.entry == entity_id)
         )
-
         cursor = query.dicts().execute()
         result = []
         for row in cursor:
@@ -73,6 +72,20 @@ class AnnotaDao:
             result.append(ann_vo)
 
         return result
+
+    @db.connection_context()
+    def get_label(self,entity_id: int):
+        dse = DatasetEntryEntity.alias()
+        lbl=LabelEntity.alias()
+        query = (
+            dse
+                .select(lbl.name)
+                .join(lbl, on=(dse.label == lbl.id))
+                .where(dse.id == entity_id)
+        )
+        result=list(query.dicts().execute())
+        return result[0]["name"] if len(result) > 0 else None
+
 
     @db.connection_context()
     def fetch_all_by_dataset(self, dataset_id: int = None):

@@ -4,6 +4,7 @@ class DatasetEntryVO:
         self._file_path =""
         self._file_size = ""
         self._dataset = ""
+        self._label = None
 
     @property
     def id(self):
@@ -38,4 +39,12 @@ class DatasetEntryVO:
         self._dataset = value
 
     def to_array(self):
-        return [self.file_path,self.file_size,self.dataset]
+        return [self.file_path,self.file_size,self.dataset, None]
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = value
