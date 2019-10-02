@@ -3,7 +3,7 @@ from PyQt5.QtCore import QSize,QModelIndex,QItemSelection,QThreadPool,QObject,py
 from PyQt5.QtGui import QContextMenuEvent,QIcon
 from PyQt5.QtWidgets import QTreeView,QAbstractItemView,QMenu,QAction,QDialog,QTabWidget,QWidget
 
-from core import HubFactory,HubProvider
+from core import HubClientFactory,Framework
 from dao.hub_dao import HubDao
 from util import GUIUtilities,Worker
 from view.forms import NewRepoForm

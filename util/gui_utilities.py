@@ -4,7 +4,7 @@ import typing
 import numpy as np
 
 from PyQt5.QtGui import QIcon, QPixmap, QImage, qRgb
-from PyQt5.QtWidgets import QLayout, QGridLayout, QLayoutItem, QMessageBox, QApplication, QMainWindow
+from PyQt5.QtWidgets import QLayout,QGridLayout,QLayoutItem,QMessageBox,QApplication,QMainWindow,QVBoxLayout,QGroupBox
 
 
 class GUIUtilities:
@@ -80,3 +80,12 @@ class GUIUtilities:
                 return widget
 
         return None
+
+    @staticmethod
+    def wrap_with_groupbox(widget,widget_title):
+        groupbox=QGroupBox()
+        groupbox.setTitle(widget_title)
+        vlayout=QVBoxLayout()
+        vlayout.addWidget(widget)
+        groupbox.setLayout(vlayout)
+        return groupbox

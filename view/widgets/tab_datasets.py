@@ -46,7 +46,7 @@ class DatasetGridWidget(QWidget, QObject):
     def data_source(self, value):
         self._entries = value
 
-    def create_ds_card(self, ds: DatasetVO):
+    def build_ds_card(self,ds: DatasetVO):
         card_widget: GridCard = GridCard(debug=False)
         card_widget.label = "{} \n {}".format(ds.name, size(ds.size, system=alternative) if ds.size else "0 MB")
         btn_delete = ImageButton(GUIUtilities.get_icon("delete.png"), size=QSize(15, 15))
@@ -71,7 +71,7 @@ class DatasetGridWidget(QWidget, QObject):
 
         return card_widget
 
-    def create_new_ds_button(self):
+    def build_new_button(self):
         new_dataset_widget: GridCard = GridCard(with_actions=False, with_title=False)
         btn_new_dataset = ImageButton(GUIUtilities.get_icon("new_folder.png"))
         new_dataset_widget.body = btn_new_dataset
@@ -81,10 +81,10 @@ class DatasetGridWidget(QWidget, QObject):
 
     def bind(self) -> None:
         cards_list = []
-        new_dataset_button = self.create_new_ds_button()
+        new_dataset_button = self.build_new_button()
         cards_list.append(new_dataset_button)
         for ds in self.data_source:
-            card_widget = self.create_ds_card(ds)
+            card_widget = self.build_ds_card(ds)
             cards_list.append(card_widget)
         self.grid_layout.widgets = cards_list
         super(DatasetGridWidget, self).update()
@@ -96,14 +96,14 @@ class DatasetTabWidget(QScrollArea):
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.datasets_grid = DatasetGridWidget()
-        self.datasets_grid.new_dataset_action_signal.connect(self.btn_new_dataset_on_slot)
-        self.datasets_grid.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_slot)
-        self.datasets_grid.refresh_dataset_action_signal.connect(self.refresh_dataset_action_slot)
-        self.datasets_grid.edit_dataset_action_signal.connect(self.edit_dataset_action_slot)
-        self.datasets_grid.open_dataset_action_signal.connect(self.open_dataset_action_slot)
-        self.datasets_grid.download_anno_action_signal.connect(self.download_annot_action_slot)
-        self.setWidget(self.datasets_grid)
+        self.data_grid = DatasetGridWidget()
+        self.data_grid.new_dataset_action_signal.connect(self.btn_new_dataset_on_slot)
+        self.data_grid.delete_dataset_action_signal.connect(self.btn_delete_dataset_on_slot)
+        self.data_grid.refresh_dataset_action_signal.connect(self.refresh_dataset_action_slot)
+        self.data_grid.edit_dataset_action_signal.connect(self.edit_dataset_action_slot)
+        self.data_grid.open_dataset_action_signal.connect(self.open_dataset_action_slot)
+        self.data_grid.download_anno_action_signal.connect(self.download_annot_action_slot)
+        self.setWidget(self.data_grid)
         self.setWidgetResizable(True)
         self.thread_pool = QThreadPool()
         self.loading_dialog = QLoadingDialog()
@@ -123,8 +123,8 @@ class DatasetTabWidget(QScrollArea):
             data, error = result
             if error:
                 raise error
-            self.datasets_grid.data_source = data
-            self.datasets_grid.bind()
+            self.data_grid.data_source = data
+            self.data_grid.bind()
 
         worker = Worker(do_work)
         worker.signals.result.connect(done_work)

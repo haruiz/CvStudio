@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon,QKeyEvent
 from PyQt5.QtWidgets import QMainWindow,QWidget,QHBoxLayout,QGraphicsDropShadowEffect,QVBoxLayout,QStatusBar,QTabWidget, \
     QLabel
 from util import GUIUtilities
-from view.widgets import LateralMenu,LateralMenuItemLoc,TopBar,DatasetTabWidget,SettingsTabWidget
+from view.widgets import LateralMenu,LateralMenuItemLoc,TopBar,DatasetTabWidget,SettingsTabWidget,ModelsTabWidget
 from view.widgets.loading_dialog import QLoadingDialog
 from .base_main_window import Ui_MainWindow
 
@@ -24,8 +24,6 @@ class MainWindowContainer(QWidget):
         self.shadow.setOffset(8)
         window.setGraphicsEffect(self.shadow)
 
-
-
 class MainWindow(QMainWindow, Ui_MainWindow):
     keyPressed = pyqtSignal(QKeyEvent)
     def __init__(self,parent=None):
@@ -36,8 +34,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowTitle("PyTorchCV Studio")
         self.resize(1600,900)
         self.lateral_menu.add_item(GUIUtilities.get_icon("data.png"),"Datasets", name="datasets")
-        self.lateral_menu.add_item(GUIUtilities.get_icon("experiments.png"),"Experiments", name="experiments")
         self.lateral_menu.add_item(GUIUtilities.get_icon("models.png"),"Models", name="models_treeview")
+        #self.lateral_menu.add_item(GUIUtilities.get_icon("experiments.png"),"Experiments",name="experiments")
         #self.lateral_menu.add_item(GUIUtilities.get_icon("support.png"),"Support", name="support")
         self.lateral_menu.add_item(GUIUtilities.get_icon("config.png"),"Settings",loc=LateralMenuItemLoc.BOTTOM,name="settings")
         self.lateral_menu.add_item(GUIUtilities.get_icon("logout.png"),"Exit",loc=LateralMenuItemLoc.BOTTOM, name="exit")
@@ -61,7 +59,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             elif object_name == "experiments":
                 raise NotImplementedError
             elif object_name == "models_treeview":
-                raise NotImplementedError
+                tab_widget=ModelsTabWidget()
+                self.tab_widget_manager.addTab(tab_widget,"Models")
             elif object_name == "settings":
                 tab_widget=SettingsTabWidget()
                 self.tab_widget_manager.addTab(tab_widget,"Settings")

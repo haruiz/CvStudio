@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QWidget,QGraphicsView,QGraphicsLineItem, \
     QGraphicsSceneHoverEvent,QGraphicsSceneMouseEvent,QTreeView,QLabel,QGraphicsScene,QListWidgetItem,QMenu,QListWidget, \
     QFrame,QGraphicsDropShadowEffect
 
-from core import HubFactory,HubProvider
+from core import HubClientFactory,Framework
 from dao import DatasetDao,AnnotaDao
 from dao.hub_dao import HubDao
 from dao.label_dao import LabelDao
@@ -596,7 +596,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
         @work_exception
         def do_work(repo):
-            hub_client=HubFactory.create(HubProvider.PyTorch)
+            hub_client=HubClientFactory.create(Framework.PyTorch)
             hub=hub_client.fetch_model(repo,force_reload=True)
             self._hub_dao.save(hub)
             return hub,None

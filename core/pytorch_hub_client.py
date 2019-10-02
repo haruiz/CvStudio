@@ -3,9 +3,9 @@ from .hub_client import HubClient
 import torch.hub
 
 
-class PyTorchClient(HubClient):
+class PyTorchHubClient(HubClient):
     def __init__(self):
-        super(PyTorchClient, self).__init__()
+        super(PyTorchHubClient,self).__init__()
 
     def fetch_model(self, repo: str, *args, **kwargs):
         try:

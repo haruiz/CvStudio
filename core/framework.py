@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
 
-class HubProvider:
+class Framework:
     PyTorch = auto()
     TensorFlow = auto()

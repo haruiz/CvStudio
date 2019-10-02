@@ -1,15 +1,15 @@
 from .hub_client import HubClient
-from .hub_provider import HubProvider
-from .pytorch_client import PyTorchClient
-from .tf_client import TfClient
+from .framework import Framework
+from .pytorch_hub_client import PyTorchHubClient
+from .tf_hub_client import TfHubClient
 
 
-class HubFactory:
+class HubClientFactory:
     @classmethod
-    def create(cls, provider=HubProvider.PyTorch) -> HubClient:
-        if provider == HubProvider.PyTorch:
-            return PyTorchClient()
-        elif provider == HubProvider.TensorFlow:
-            return TfClient()
+    def create(cls,provider=Framework.PyTorch) -> HubClient:
+        if provider == Framework.PyTorch:
+            return PyTorchHubClient()
+        elif provider == Framework.TensorFlow:
+            return TfHubClient()
         else:
             raise ModuleNotFoundError
