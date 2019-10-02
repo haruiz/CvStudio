@@ -1,7 +1,7 @@
 from peewee import *
 
 from datetime import datetime
-from dao import db, DatasetEntity, DatasetEntryEntity
+from dao import db,DatasetEntity,DatasetEntryEntity,LabelEntity
 from util import MiscUtilities
 from vo import DatasetVO,DatasetEntryVO,LabelVO
 
@@ -109,5 +109,21 @@ class DatasetDao:
             result.append(vo)
             for k, v in ds.items():
                 setattr(vo, k, v)
-
         return result
+
+
+    @db.connection_context()
+    def fetch_entries_for_classification(self, ds_id):
+        en: DatasetEntryEntity=DatasetEntryEntity.alias("en")
+        lbl: LabelEntity =LabelEntity.alias("lbl")
+        query = (en.select(
+                    en.file_path,
+                    lbl.name
+                )
+                .join(
+                    lbl,
+                    JOIN.INNER,
+                    on=en.label == lbl.id)
+                .where(en.dataset == ds_id and en.label.is_null(False)))
+        cursor = query.dicts().execute()
+        return list(cursor)
