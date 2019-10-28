@@ -1,12 +1,12 @@
-# PyTorchCV Studio
+# CV-Studio
 
-PyTorchCV Studio is a graphical annotation tool to address different Computer Vision tasks. 
+CV-Studio is a graphical annotation tool to address different Computer Vision tasks. 
 
-PyTorchCV is developed in Python, Qt, SQLite and uses PyTorch's resources to train deep learning models.
+CV-Studio is developed in Python, Qt, SQLite and uses PyTorch's resources to train deep learning models.
 
 <img alt="" src="assets/images/image.png"></img> 
 
-PyTorch CV Studio supports:
+CVStudio supports:
 
 **Datasets**:
 * Create and manage your datasets for images.
@@ -29,17 +29,17 @@ PyTorch CV Studio supports:
 
 ## Installation
 
-> **Note:** PyTorch CV Studio only have been developed and tested on Windows. Future platforms (macOS and Linux) 
+> **Note:** CV-Studio only have been developed and tested on Windows. Future platforms (macOS and Linux) 
 >are in the roadmap.
 
 **Windows + Anaconda:**
 
 * Clone the repository:
-  > `git clone https://github.com/haruiz/PytorchCvStudio.git`
+  > `git clone https://github.com/haruiz/CvStudio.git`
 * Download and install [Anaconda](https://www.anaconda.com/distribution/#download) (Python 3+).
-* Open Anaconda Prompt, go to *PyTorchCV* directory and follow the next steps:
+* Open Anaconda Prompt, go to *CvStudio* directory and follow the next steps:
   * Create a new environment with Python 3.6:  
-    > `conda create --name pytorchcv python=3.6`
+    > `conda create --name cvstudio python=3.6`
   * Install required libraries:
     > `pip install -r pip_req.txt`
   * Install [PyTorch](https://pytorch.org/) with conda following the [instructions](https://pytorch.org/get-started/locally/)
@@ -48,12 +48,12 @@ PyTorch CV Studio supports:
     <img alt="" src="assets/images/pytorch_install_config_2.png"></img>
     
     > `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly`
-* Run and enjoy PyTorchCV Studio: 
-  > `python pytorchcv.py`
+* Run and enjoy CV-Studio Studio: 
+  > `python cvstudio.py`
 
 ## Documentation
 
-Check out the [wiki](https://github.com/haruiz/PytorchCvStudio/wiki).
+Check out the [wiki](https://github.com/haruiz/CvStudio/wiki).
 
 ## How to contribute
 
@@ -61,9 +61,9 @@ Send a pull request.
  
 ## License
 
-[Free software: MIT license](https://github.com/haruiz/PytorchCvStudio/blob/master/LICENSE)
+[Free software: MIT license](https://github.com/haruiz/CvStudio.git/blob/master/LICENSE)
 
-Citation: haruiz. PyTorchCV Studio. Git code (2019). https://github.com/haruiz/PytorchCvStudio
+Citation: haruiz. CV-Studio. Git code (2019). https://github.com/haruiz/CvStudio
 
 ## Credits
 
