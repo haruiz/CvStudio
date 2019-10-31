@@ -1,5 +1,7 @@
 # CV-Studio
 
+<img alt="" src="logo.png" width="200px"></img>
+ 
 CV-Studio is a graphical annotation tool to address different Computer Vision tasks. 
 
 CV-Studio is developed in Python, Qt, SQLite and uses PyTorch's resources to train deep learning models.
