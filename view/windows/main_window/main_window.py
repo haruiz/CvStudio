@@ -24,8 +24,10 @@ class MainWindowContainer(QWidget):
         self.shadow.setOffset(8)
         window.setGraphicsEffect(self.shadow)
 
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     keyPressed = pyqtSignal(QKeyEvent)
+
     def __init__(self,parent=None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
