@@ -12,7 +12,7 @@ class DatasetForm(QDialog, Ui_Base_DatasetDialog):
         super(DatasetForm, self).__init__(parent)
         self.setupUi(self)
         self.setWindowTitle("Create new dataset".title())
-        self.setWindowIcon(GUIUtilities.get_icon("pytorch.png"))
+        self.setWindowIcon(GUIUtilities.get_icon("polygon.png"))
         self._value = vo
         self.initialize_form()
 

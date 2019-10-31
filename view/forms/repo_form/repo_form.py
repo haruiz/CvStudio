@@ -7,7 +7,7 @@ class NewRepoForm(QDialog, Ui_NewRepo):
         super(NewRepoForm, self).__init__(parent)
         self.setupUi(self)
         self.setWindowTitle("New Repository".title())
-        self.setWindowIcon(GUIUtilities.get_icon("pytorch.png"))
+        self.setWindowIcon(GUIUtilities.get_icon("polygon.png"))
         self._result = None
 
     @property

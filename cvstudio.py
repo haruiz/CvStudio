@@ -38,7 +38,7 @@ if __name__ == "__main__":
         app = QApplication(sys.argv)
         fusion_theme(app)
         mainWindow = MainWindow()
-        mainWindow.setWindowIcon(GUIUtilities.get_icon("pytorch.png"))
+        mainWindow.setWindowIcon(GUIUtilities.get_icon("polygon.png"))
         mainWindow.show()
         sys.exit(app.exec_())
     except Exception as ex:
