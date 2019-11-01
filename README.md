@@ -45,11 +45,8 @@ CVStudio supports:
   * Install required libraries:
     > `pip install -r pip_req.txt`
   * Install [PyTorch](https://pytorch.org/) with conda following the [instructions](https://pytorch.org/get-started/locally/)
-    in the official site. For the purpose of this tutorial we are selecting the following configuration:
-    
-    <img alt="" src="assets/images/pytorch_install_config_2.png"></img>
-    
-    > `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly`
+    in the official site. For the purpose of this tutorial we are selecting the following configuration:    
+    > `conda install pytorch torchvision cudatoolkit=10.1 -c pytorch-nightly`
 * Run and enjoy CV-Studio Studio: 
   > `python cvstudio.py`
 
