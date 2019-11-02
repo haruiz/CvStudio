@@ -83,6 +83,7 @@ class MediaTabWidget(QWidget):
         tab_widget=ImageViewerWidget()
         tab_widget.source=item
         tab_widget.bind()
+        tab_widget.layout().setContentsMargins(0,0,0,0)
         index = tab_widget_manager.addTab(tab_widget,item.file_path)
         tab_widget_manager.setCurrentIndex(index)
 

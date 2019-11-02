@@ -1,8 +1,8 @@
 from PyQt5.QtCore import QObject,pyqtSignal
 from PyQt5.QtWidgets import QGraphicsScene,QGraphicsItem
 
-from view.widgets.image_viewer.box import EditableBox
-from view.widgets.image_viewer.polygon import EditablePolygon
+from view.widgets.image_viewer.box_item import EditableBox
+from view.widgets.image_viewer.polygon_item import EditablePolygon
 
 
 class ImageViewerScene(QGraphicsScene, QObject):
