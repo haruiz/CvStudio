@@ -33,7 +33,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.tab_widget_manager.tabCloseRequested.connect(lambda index: self.tab_widget_manager.removeTab(index))
         self.lateral_menu=LateralMenu()
-        self.setWindowTitle("PyTorchCV Studio")
+        self.setWindowTitle("CVStudio")
         self.resize(1600,900)
         self.lateral_menu.add_item(GUIUtilities.get_icon("data.png"),"Datasets", name="datasets")
         #self.lateral_menu.add_item(GUIUtilities.get_icon("models.png"),"Models", name="models_treeview")

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'base_main_window.ui'
 #
-# Created by: PyQt5 UI code generator 5.12.3
+# Created by: PyQt5 UI code generator 5.13.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -18,6 +18,8 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.verticalLayout.setContentsMargins(5, 5, 5, 5)
+        self.verticalLayout.setSpacing(5)
         self.verticalLayout.setObjectName("verticalLayout")
         self.widget = QtWidgets.QWidget(self.centralwidget)
         self.widget.setObjectName("widget")
@@ -30,12 +32,13 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.frame_lateral_bar.sizePolicy().hasHeightForWidth())
         self.frame_lateral_bar.setSizePolicy(sizePolicy)
-        self.frame_lateral_bar.setMinimumSize(QtCore.QSize(80, 0))
+        self.frame_lateral_bar.setMinimumSize(QtCore.QSize(40, 0))
         self.frame_lateral_bar.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame_lateral_bar.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.frame_lateral_bar.setObjectName("frame_lateral_bar")
         self.horizontalLayout.addWidget(self.frame_lateral_bar)
         self.tab_widget_manager = QtWidgets.QTabWidget(self.widget)
+        self.tab_widget_manager.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.tab_widget_manager.setTabShape(QtWidgets.QTabWidget.Rounded)
         self.tab_widget_manager.setDocumentMode(False)
         self.tab_widget_manager.setTabsClosable(True)
@@ -59,7 +62,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tab_widget_manager.setCurrentIndex(1)
+        self.tab_widget_manager.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
