@@ -21,7 +21,7 @@ class LateralMenu(QWidget, QObject):
         self.top_frame = QFrame()
         #size_policy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
         #self.frame.setSizePolicy(size_policy)
-        self.top_frame.setFixedWidth(90)
+        #self.top_frame.setFixedWidth(90)
         self.top_frame.setFrameStyle(QFrame.NoFrame)
         self.top_frame_layout = QVBoxLayout()
         self.top_frame_layout.setContentsMargins(2,2,2,2)
@@ -29,7 +29,7 @@ class LateralMenu(QWidget, QObject):
         self.top_frame.setLayout(self.top_frame_layout)
 
         self.bottom_frame=QFrame()
-        self.bottom_frame.setFixedWidth(90)
+        #self.bottom_frame.setFixedWidth(90)
         self.bottom_frame.setFrameStyle(QFrame.NoFrame)
         self.bottom_frame_layout=QVBoxLayout()
         self.bottom_frame_layout.setContentsMargins(2,2,2,2)
