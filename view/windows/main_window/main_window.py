@@ -36,8 +36,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowTitle("CV-Studio")
         self.resize(1600, 900)
         self.lateral_menu.add_item(GUIUtilities.get_icon("data.png"), "Datasets", name="datasets")
-        self.lateral_menu.add_item(GUIUtilities.get_icon("logout.png"), "Exit", loc=LateralMenuItemLoc.BOTTOM,
-                                   name="exit")
+        self.lateral_menu.add_item(GUIUtilities.get_icon("logout.png"), "Exit", loc=LateralMenuItemLoc.BOTTOM, name="exit")
         self.lateral_menu.item_click_signal.connect(self.item_click_signal_slot)
         self.tab_widget_manager.clear()
         self.loading_dialog = QLoadingDialog()
