@@ -9,23 +9,27 @@ class AnnotaDao:
         pass
 
     @db.connection_context()
-    def save(self, param: typing.Any):
-        if isinstance(param, AnnotaVO):
-            vo = param
+    def save(self, entity_id, entry: typing.Any):
+        if isinstance(entry, AnnotaVO):
+            vo = entry
             return AnnotationEntity.create(
                 entry=vo.entry,
                 label=vo.label,
                 points=vo.points,
                 kind=vo.kind
             )
-        elif isinstance(param, list):
+        elif isinstance(entry, list):
             with db.atomic():
+                query=(AnnotationEntity
+                       .delete()
+                       .where(AnnotationEntity.entry == entity_id))
+                query.execute()
                 rows = [
                     (vo.entry,
                      vo.label,
                      vo.points,
                      vo.kind)
-                    for vo in param]
+                    for vo in entry]
                 AnnotationEntity \
                     .insert_many(rows, fields=["entry", "label", "points", "kind"]) \
                     .execute()
