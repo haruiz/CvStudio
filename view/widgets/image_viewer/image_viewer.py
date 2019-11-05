@@ -466,7 +466,6 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
     def save_annotations(self):
         scene: QGraphicsScene=self.viewer.scene()
-        self._annot_dao.delete(self.source.id)
         annot_list=[]
         for item in scene.items():
             img_bbox: QRectF=self.viewer.pixmap.sceneBoundingRect()
@@ -492,8 +491,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 poly.kind="polygon"
                 poly.points=",".join(map(str,points))
                 annot_list.append(poly)
-
-        self._annot_dao.save(annot_list)
+        self._annot_dao.save(self.source.id, annot_list)
 
     def btn_save_annotations_clicked_slot(self):
         self.save_annotations()
