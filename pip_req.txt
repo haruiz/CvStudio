@@ -3,6 +3,7 @@ cffi==1.12.3
 dask==2.4.0
 hurry.filesize==0.9
 imutils==0.5.3
+Mako==1.1.0
 more-itertools==7.2.0
 numpy==1.17.2
 olefile==0.46
