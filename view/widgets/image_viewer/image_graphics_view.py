@@ -68,14 +68,14 @@ class ImageViewer(QGraphicsView,QObject):
         self._pixmap = ImagePixmap()
         self._pixmap.setPixmap(value)
         self._pixmap.setOffset(-value.width()/2, -value.height()/2)
-        self._pixmap.setTransformationMode(QtCore.Qt.SmoothTransformation)
+        #self._pixmap.setTransformationMode(QtCore.Qt.SmoothTransformation)
         self._pixmap.signals.hoverEnterEventSgn.connect(self.pixmap_hoverEnterEvent_slot)
         self._pixmap.signals.hoverLeaveEventSgn.connect(self.pixmap_hoverLeaveEvent_slot)
         self._pixmap.signals.hoverMoveEventSgn.connect(self.pixmap_hoverMoveEvent_slot)
         self._scene.addItem(self._pixmap)
         # rect=self._scene.addRect(QtCore.QRectF(0,0,100,100), QtGui.QPen(QtGui.QColor("red")))
         # rect.setZValue(1.0)
-        self.fit_to_window()
+        #self.fit_to_window()
 
     @property
     def selection_mode(self):

@@ -9,7 +9,7 @@ class LabelDao:
     @db.atomic()
     def save(self, vo: LabelVO):
         label = LabelEntity.create(
-            name=vo.name,
+            name=vo.name.title(),
             color=vo.color,
             dataset=vo.dataset
         )
@@ -26,8 +26,25 @@ class LabelDao:
             result.append(vo)
             for k, v in ds.items():
                 setattr(vo, k, v)
-
         return result
+
+    @db.connection_context()
+    def find_by_name(self, ds_id, label_name):
+        query=(
+            LabelEntity
+                .select()
+                .where((LabelEntity.dataset == ds_id)
+                       & (LabelEntity.name == label_name)))
+        # print(query)
+        cursor=query.dicts().execute()
+        result=list(cursor)
+        vo=LabelVO()
+        if len(result) > 0:
+            row=result[0]
+            for k,v in row.items():
+                setattr(vo,k,v)
+            return vo
+        return None
 
     @db.atomic()
     def delete(self, id: int):

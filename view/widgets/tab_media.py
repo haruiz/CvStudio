@@ -55,7 +55,8 @@ class MediaTabWidget(QWidget):
 
     @pyqtSlot(GalleryCard,Gallery)
     def gallery_card_double_click_slot(self,card: GalleryCard,gallery: Gallery):
-        self.open_file(card.tag)
+        #self.open_file(card.tag)
+        pass
 
     @pyqtSlot(list)
     @gui_exception

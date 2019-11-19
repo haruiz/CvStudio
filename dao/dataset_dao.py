@@ -1,3 +1,5 @@
+import os
+
 from peewee import *
 
 from datetime import datetime
@@ -43,6 +45,25 @@ class DatasetDao:
                 setattr(vo, k, v)
 
         return result
+
+    @db.connection_context()
+    def find_by_path(self, ds_id, image_path):
+        query = (
+            DatasetEntryEntity
+                .select()
+                .where((DatasetEntryEntity.dataset == ds_id)
+                       & (DatasetEntryEntity.file_path.endswith(os.path.split(image_path)[1]))))
+        #print(query)
+        cursor = query.dicts().execute()
+        result = list(cursor)
+        vo = DatasetEntryVO()
+        if len(result) > 0:
+            row = result[0]
+            for k,v in row.items():
+                setattr(vo,k,v)
+            return vo
+        return None
+
 
     @db.connection_context()
     def delete(self, id: int):
@@ -110,7 +131,6 @@ class DatasetDao:
             for k, v in ds.items():
                 setattr(vo, k, v)
         return result
-
 
     @db.connection_context()
     def fetch_entries_for_classification(self, ds_id):

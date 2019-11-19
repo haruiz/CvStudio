@@ -185,6 +185,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
 
+
     @gui_exception
     def load_models(self):
         @work_exception
@@ -503,4 +504,6 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.load_images()
         self.load_models()
         self.load_labels()
+
+
 
