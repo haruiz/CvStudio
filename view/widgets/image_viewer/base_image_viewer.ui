@@ -64,7 +64,7 @@
          </property>
          <property name="minimumSize">
           <size>
-           <width>20</width>
+           <width>50</width>
            <height>20</height>
           </size>
          </property>
@@ -82,7 +82,7 @@
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <property name="spacing">
-           <number>0</number>
+           <number>10</number>
           </property>
           <property name="leftMargin">
            <number>0</number>
@@ -97,50 +97,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QFrame" name="frame_7">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>40</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <property name="spacing">
-              <number>5</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <layout class="QVBoxLayout" name="actions_layout">
-               <property name="spacing">
-                <number>10</number>
-               </property>
-              </layout>
-             </item>
-            </layout>
-           </widget>
+           <layout class="QVBoxLayout" name="actions_layout"/>
           </item>
          </layout>
         </widget>
@@ -288,7 +245,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>314</width>
+               <width>685</width>
                <height>296</height>
               </rect>
              </property>
@@ -306,7 +263,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>314</width>
+               <width>685</width>
                <height>296</height>
               </rect>
              </property>

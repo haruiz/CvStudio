@@ -1,5 +1,7 @@
 import typing
 
+from peewee import chunked
+
 from dao import db, AnnotationEntity, LabelEntity, DatasetEntryEntity
 from vo import AnnotaVO, LabelVO
 
@@ -30,9 +32,13 @@ class AnnotaDao:
                      vo.points,
                      vo.kind)
                     for vo in entry]
-                AnnotationEntity \
-                    .insert_many(rows, fields=["entry", "label", "points", "kind"]) \
-                    .execute()
+                # AnnotationEntity \
+                #     .insert_many(rows, fields=["entry", "label", "points", "kind"]) \
+                #     .execute()
+                for batch in chunked(rows,100):
+                    AnnotationEntity \
+                        .insert_many(batch, fields=["entry", "label", "points", "kind"]) \
+                        .execute()
 
     @db.connection_context()
     def delete(self, entity_id: int):

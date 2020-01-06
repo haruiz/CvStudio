@@ -361,6 +361,7 @@ class DatasetTabWidget(QScrollArea):
                             if image_vo:
                                 for roi in objects:
                                     label_name = roi.find('name').text
+                                    label_name = label_name.title()
                                     label_vo = self._labels_dao.find_by_name(dataset_vo.id,label_name)
                                     if label_vo is None:
                                         label_vo = LabelVO()
@@ -381,6 +382,7 @@ class DatasetTabWidget(QScrollArea):
                                         box.points=",".join(map(str,[x1,y1,x2,y2]))
                                         annotations.append(box)
                         if len(annotations) > 0:
+                            print(annotations)
                             self._annot_dao.save(dataset_vo.id, annotations)
                         return annotations, None
 
