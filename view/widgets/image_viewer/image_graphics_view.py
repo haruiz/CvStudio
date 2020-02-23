@@ -1,12 +1,14 @@
+import math
+
 from PyQt5 import QtGui,QtCore
 from PyQt5.QtCore import QObject,QPoint,QRect,QPointF,QSize,QRectF
 from PyQt5.QtGui import QPainter,QPen,QPixmap,QColor,QWheelEvent,QPainterPath
-from PyQt5.QtWidgets import QGraphicsView,QGraphicsLineItem,QRubberBand,QGraphicsSceneHoverEvent,QGraphicsPathItem
+from PyQt5.QtWidgets import QGraphicsView,QGraphicsLineItem,QRubberBand,QGraphicsSceneHoverEvent,QGraphicsPathItem, \
+    QGraphicsEllipseItem
 
-from view.widgets.image_viewer.box_item import EditableBox
+from view.widgets.image_viewer.items import EditableBox,EditableEllipse,EditablePolygon,EditableItem
 from view.widgets.image_viewer.image_pixmap_item import ImagePixmap
 from view.widgets.image_viewer.image_viewer_scene import ImageViewerScene
-from view.widgets.image_viewer.polygon_item import EditablePolygon
 from view.widgets.image_viewer.selection_mode import SELECTION_MODE
 
 
@@ -45,6 +47,8 @@ class ImageViewer(QGraphicsView,QObject):
         self._is_drawing=False
         self._last_point_drawn=QPoint()
         self._current_label = None
+        self._last_click_point = None
+        self._current_ellipse = None
 
     @property
     def current_label(self):
@@ -86,6 +90,7 @@ class ImageViewer(QGraphicsView,QObject):
         self._polygon_guide_line.hide()
         self._current_polygon=None
         self._current_free_path=None
+        self._current_ellipse = None
         self._is_drawing=value == SELECTION_MODE.FREE
         if value == SELECTION_MODE.NONE:
             self.enable_items(True)
@@ -95,10 +100,8 @@ class ImageViewer(QGraphicsView,QObject):
 
     def remove_annotations(self):
         for item in self._scene.items():
-            if isinstance(item, EditableBox):
-                self._scene.removeItem(item)
-            elif isinstance(item, EditablePolygon):
-                item.delete_polygon()
+            if isinstance(item, EditableItem):
+                item.delete_item()
 
     def remove_annotations_by_label(self, label_name):
         for item in self._scene.items():
@@ -149,7 +152,7 @@ class ImageViewer(QGraphicsView,QObject):
 
     def fit_to_window(self):
         """Fit image within view."""
-        if not self.pixmap or  not self._pixmap.pixmap():
+        if not self.pixmap or  not self.pixmap.pixmap():
             return
         #self._pixmap.setTransformationMode(QtCore.Qt.SmoothTransformation)
         self.fitInView(self._pixmap,QtCore.Qt.KeepAspectRatio)
@@ -195,6 +198,16 @@ class ImageViewer(QGraphicsView,QObject):
                     self._polygon_guide_line.setLine(last_point.x(),last_point.y(),mouse_pos.x(),mouse_pos.y())
             else:
                 self._polygon_guide_line.hide()
+        elif self.selection_mode == SELECTION_MODE.ELLIPSE and self._current_ellipse:
+            self._current_ellipse: QGraphicsEllipseItem
+            mouse_pos = self.mapToScene(evt.pos())
+            ellipse_rect = self._current_ellipse.rect()
+            ellipse_pos = QPointF(ellipse_rect.x(),ellipse_rect.y())
+            distance = math.hypot(mouse_pos.x() - ellipse_pos.x(),mouse_pos.y() - ellipse_pos.y())
+            new_rect: QRectF = self._current_ellipse.rect()
+            new_rect.setWidth(distance)
+            new_rect.setHeight(distance)
+            self._current_ellipse.setRect(new_rect)
 
         elif self.selection_mode == SELECTION_MODE.FREE and evt.buttons() and QtCore.Qt.LeftButton:
             if self._current_free_path:
@@ -213,11 +226,10 @@ class ImageViewer(QGraphicsView,QObject):
                 self._box_origin=evt.pos()
                 self._box_picker.setGeometry(QRect(self._box_origin,QSize()))
                 self._box_picker.show()
-
             elif self._selection_mode == SELECTION_MODE.POLYGON:
                 pixmap_rect: QRectF=self._pixmap.boundingRect()
                 new_point=self.mapToScene(evt.pos())
-                # consider only the points intothe image
+                # consider only the points into the image
                 if  pixmap_rect.contains(new_point):
                     if self._current_polygon is None:
                         self._current_polygon=EditablePolygon()
@@ -226,12 +238,22 @@ class ImageViewer(QGraphicsView,QObject):
                         self._current_polygon.addPoint(new_point)
                     else:
                         self._current_polygon.addPoint(new_point)
+            elif self._selection_mode == SELECTION_MODE.ELLIPSE:
+                pixmap_rect: QRectF=self._pixmap.boundingRect()
+                mouse_pos=self.mapToScene(evt.pos())
+                if pixmap_rect.contains(mouse_pos):
+                    self.setDragMode(QGraphicsView.NoDrag)
+                    ellipse_rec = QtCore.QRectF(mouse_pos.x(),mouse_pos.y(),0,0)
+                    self._current_ellipse = EditableEllipse()
+                    self._current_ellipse.label = self._current_label
+                    self._current_ellipse.setRect(ellipse_rec)
+                    self._scene.addItem(self._current_ellipse)
 
             elif self._selection_mode == SELECTION_MODE.FREE:
                 # start drawing
                 new_point=self.mapToScene(evt.pos())
                 pixmap_rect: QRectF=self._pixmap.boundingRect()
-                # consider only the points intothe image
+                # consider only the points into the image
                 if  pixmap_rect.contains(new_point):
                     self.setDragMode(QGraphicsView.NoDrag)
                     pen=QPen(QtGui.QColor(235,72,40))
@@ -250,42 +272,50 @@ class ImageViewer(QGraphicsView,QObject):
         super(ImageViewer,self).mousePressEvent(evt)
 
     def mouseReleaseEvent(self, evt: QtGui.QMouseEvent) -> None:
-        if evt.button() == QtCore.Qt.LeftButton:
-            if self.selection_mode == SELECTION_MODE.BOX:
-                roi: QRect=self._box_picker.geometry()
-                roi: QRectF=self.mapToScene(roi).boundingRect()
-                pixmap_rect = self._pixmap.boundingRect()
-                self._box_picker.hide()
-                if pixmap_rect == roi.united(pixmap_rect):
-                    rect=EditableBox(roi)
-                    rect.label=self.current_label
-                    self._scene.addItem(rect)
+        try:
+            pixmap_rect=self._pixmap.boundingRect()
+            if evt.button() == QtCore.Qt.LeftButton:
+                if self.selection_mode == SELECTION_MODE.BOX:
+                    roi: QRect=self._box_picker.geometry()
+                    roi: QRectF=self.mapToScene(roi).boundingRect()
+                    self._box_picker.hide()
+                    if pixmap_rect == roi.united(pixmap_rect):
+                        rect=EditableBox(roi)
+                        rect.label=self.current_label
+                        self._scene.addItem(rect)
+                        self.selection_mode=SELECTION_MODE.NONE
+                        self.setDragMode(QGraphicsView.ScrollHandDrag)
+                elif self.selection_mode == SELECTION_MODE.ELLIPSE and self._current_ellipse:
+                    roi: QRect=self._current_ellipse.boundingRect()
+                    if pixmap_rect == roi.united(pixmap_rect):
+                        self.selection_mode=SELECTION_MODE.NONE
+                        self.setDragMode(QGraphicsView.ScrollHandDrag)
+                    else:
+                        self._current_ellipse.delete_item()
+                elif self.selection_mode == SELECTION_MODE.FREE and self._current_free_path:
+                    # create polygon
+                    self._current_free_path: QGraphicsPathItem
+                    path_rect = self._current_free_path.boundingRect()
+                    if pixmap_rect == path_rect.united(pixmap_rect):
+                        path=self._current_free_path.path()
+                        path_polygon=EditablePolygon()
+                        path_polygon.label = self.current_label
+                        self._scene.addItem(path_polygon)
+                        for i in range(0,path.elementCount(),10):
+                            x,y=path.elementAt(i).x,path.elementAt(i).y
+                            path_polygon.addPoint(QPointF(x,y))
+                    self._scene.removeItem(self._current_free_path)
                     self.selection_mode=SELECTION_MODE.NONE
                     self.setDragMode(QGraphicsView.ScrollHandDrag)
 
-            elif self.selection_mode == SELECTION_MODE.FREE and self._current_free_path:
-                # create polygon
-                self._current_free_path: QGraphicsPathItem
-                path_rect = self._current_free_path.boundingRect()
-                pixmap_rect=self._pixmap.boundingRect()
-                if pixmap_rect == path_rect.united(pixmap_rect):
-                    path=self._current_free_path.path()
-                    path_polygon=EditablePolygon()
-                    path_polygon.label = self.current_label
-                    self._scene.addItem(path_polygon)
-                    for i in range(0,path.elementCount(),10):
-                        x,y=path.elementAt(i).x,path.elementAt(i).y
-                        path_polygon.addPoint(QPointF(x,y))
-                self._scene.removeItem(self._current_free_path)
-                self.selection_mode=SELECTION_MODE.NONE
-                self.setDragMode(QGraphicsView.ScrollHandDrag)
 
-
-        super(ImageViewer, self).mouseReleaseEvent(evt)
+            super(ImageViewer, self).mouseReleaseEvent(evt)
+        except Exception as ex:
+            print(ex)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         if self._current_polygon and event.key() == QtCore.Qt.Key_Space:
-            points=self._current_polygon.points
+            #points=self._current_polygon.points
             self._current_polygon.label=self.current_label
             self._current_polygon=None
             self.selection_mode = SELECTION_MODE.NONE

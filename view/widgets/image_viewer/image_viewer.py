@@ -26,8 +26,7 @@ from view.widgets.loading_dialog import QLoadingDialog
 from view.widgets.models_treeview import ModelsTreeview
 from vo import LabelVO,DatasetEntryVO,AnnotaVO
 from .base_image_viewer import Ui_Image_Viewer_Widget
-from .box_item import EditableBox
-from .polygon_item import EditablePolygon
+from .items import EditableBox,EditablePolygon,EditableItem,EditableEllipse
 from ..image_button import ImageButton
 import more_itertools
 
@@ -139,7 +138,9 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             self.viewer.current_label = current_label
 
     def image_list_sel_changed_slot(self,curr: CustomListWidgetItem,prev: CustomListWidgetItem):
-        if curr: self.source = curr.tag
+        if curr:
+            self.source = curr.tag
+            self.load_image()
 
     @property
     def image(self):
@@ -157,8 +158,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         image_path = self._source.file_path
         self._image=Image.open(image_path)
         self.viewer.pixmap=QPixmap(image_path)
-        self.load_image_annotations()
-        self.load_image_label()
+
 
     @gui_exception
     def load_images(self):
@@ -236,27 +236,30 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             offset=QPointF(img_bbox.width()/2,img_bbox.height()/2)
             for entry in result:
                 try:
-                    vo : AnnotaVO = entry
-                    points = map(float,vo.points.split(","))
-                    points = list(more_itertools.chunked(points, 2))
-                    if vo.kind == "box":
-                        x = points[0][0] - offset.x()
-                        y=  points[0][1] - offset.y()
-                        w = math.fabs(points[0][0] - points[1][0])
-                        h = math.fabs(points[0][1] - points[1][1])
-                        roi : QRectF = QRectF(x,y,w,h)
-                        rect=EditableBox(roi)
-                        rect.label = vo.label
-                        self.viewer.scene().addItem(rect)
+                    vo: AnnotaVO=entry
+                    points=map(float,vo.points.split(","))
+                    points=list(more_itertools.chunked(points,2))
+                    if vo.kind == "box" or vo.kind == "ellipse":
+                        x=points[0][0]-offset.x()
+                        y=points[0][1]-offset.y()
+                        w=math.fabs(points[0][0]-points[1][0])
+                        h=math.fabs(points[0][1]-points[1][1])
+                        roi: QRectF=QRectF(x,y,w,h)
+                        if vo.kind == "box":
+                            item=EditableBox(roi)
+                        else:
+                            item=EditableEllipse()
+                        item.setRect(roi)
+                        item.label=vo.label
+                        self.viewer.scene().addItem(item)
                     elif vo.kind == "polygon":
-                        polygon = EditablePolygon()
-                        polygon.label = vo.label
-                        self.viewer.scene().addItem(polygon)
+                        item=EditablePolygon()
+                        item.label=vo.label
+                        self.viewer.scene().addItem(item)
                         for p in points:
-                            polygon.addPoint(QPoint(p[0] - offset.x(), p[1] - offset.y()))
+                            item.addPoint(QPoint(p[0]-offset.x(),p[1]-offset.y()))
                 except Exception as ex:
-                    print(ex)
-
+                    GUIUtilities.show_error_message("Error loading the annotations: {}".format(ex), "Error")
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
@@ -309,25 +312,28 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             self._loading_dialog.exec_()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-        row = self.images_list_widget.currentRow()
-        last_index = self.images_list_widget.count() - 1
-        if event.key() == QtCore.Qt.Key_A:
-            self.save_annotations()
-            if row > 0:
-                self.images_list_widget.setCurrentRow(row-1)
-            else:
-                self.images_list_widget.setCurrentRow(last_index)
-        if event.key() == QtCore.Qt.Key_D:
-            self.save_annotations()
-            if row < last_index:
-                self.images_list_widget.setCurrentRow(row+1)
-            else:
-                self.images_list_widget.setCurrentRow(0)
-        if event.key() == QtCore.Qt.Key_W:
-            self.viewer.selection_mode=SELECTION_MODE.POLYGON
-        if event.key() == QtCore.Qt.Key_S:
-            self.viewer.selection_mode=SELECTION_MODE.BOX
-        super(ImageViewerWidget,self).keyPressEvent(event)
+        try:
+            row = self.images_list_widget.currentRow()
+            last_index = self.images_list_widget.count() - 1
+            if event.key() == QtCore.Qt.Key_A:
+                self.save_annotations()
+                if row > 0:
+                    self.images_list_widget.setCurrentRow(row-1)
+                else:
+                    self.images_list_widget.setCurrentRow(last_index)
+            if event.key() == QtCore.Qt.Key_D:
+                self.save_annotations()
+                if row < last_index:
+                    self.images_list_widget.setCurrentRow(row+1)
+                else:
+                    self.images_list_widget.setCurrentRow(0)
+            if event.key() == QtCore.Qt.Key_W:
+                self.viewer.selection_mode=SELECTION_MODE.POLYGON
+            if event.key() == QtCore.Qt.Key_S:
+                self.viewer.selection_mode=SELECTION_MODE.BOX
+            super(ImageViewerWidget,self).keyPressEvent(event)
+        except Exception as ex:
+            GUIUtilities.show_error_message(str(ex), "Error")
 
     @gui_exception
     def trv_models_action_click_slot(self, action:  QAction):
@@ -431,6 +437,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
         self.btn_enable_polygon_selection=ImageButton(icon=GUIUtilities.get_icon("polygon.png"),size=icon_size)
         self.btn_enable_rectangle_selection=ImageButton(icon=GUIUtilities.get_icon("square.png"),size=icon_size)
+        self.btn_enable_circle_selection = ImageButton(icon=GUIUtilities.get_icon("circle.png"), size=icon_size)
         self.btn_enable_free_selection=ImageButton(icon=GUIUtilities.get_icon("highlighter.png"),size=icon_size)
         self.btn_enable_none_selection=ImageButton(icon=GUIUtilities.get_icon("cursor.png"),size=icon_size)
         self.btn_save_annotations = ImageButton(icon=GUIUtilities.get_icon("save-icon.png"),size=icon_size)
@@ -438,6 +445,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
         self.actions_layout.addWidget(self.btn_enable_rectangle_selection)
         self.actions_layout.addWidget(self.btn_enable_polygon_selection)
+        self.actions_layout.addWidget(self.btn_enable_circle_selection)
         self.actions_layout.addWidget(self.btn_enable_free_selection)
         self.actions_layout.addWidget(self.btn_enable_none_selection)
         self.actions_layout.addWidget(self.btn_clear_annotations)
@@ -448,6 +456,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.btn_enable_rectangle_selection.clicked.connect(self.btn_enable_rectangle_selection_clicked_slot)
         self.btn_enable_free_selection.clicked.connect(self.btn_enable_free_selection_clicked_slot)
         self.btn_enable_none_selection.clicked.connect(self.btn_enable_none_selection_clicked_slot)
+        self.btn_enable_circle_selection.clicked.connect(self.btn_enable_circle_selection_clicked_slot)
         self.btn_clear_annotations.clicked.connect(self.btn_clear_annotations_clicked_slot)
 
     def btn_clear_annotations_clicked_slot(self):
@@ -459,6 +468,9 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def btn_enable_rectangle_selection_clicked_slot(self):
         self.viewer.selection_mode=SELECTION_MODE.BOX
 
+    def btn_enable_circle_selection_clicked_slot(self):
+        self.viewer.selection_mode=SELECTION_MODE.ELLIPSE
+
     def btn_enable_none_selection_clicked_slot(self):
         self.viewer.selection_mode=SELECTION_MODE.NONE
 
@@ -467,35 +479,23 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
     def save_annotations(self):
         scene: QGraphicsScene=self.viewer.scene()
-        annot_list=[]
+        annotations=[]
         for item in scene.items():
-            img_bbox: QRectF=self.viewer.pixmap.sceneBoundingRect()
-            offset=QPointF(img_bbox.width()/2,img_bbox.height()/2)
-            if isinstance(item,EditableBox):
-                item_box: QRectF=item.sceneBoundingRect()
-                x1=math.floor(item_box.topLeft().x()+offset.x())
-                y1=math.floor(item_box.topRight().y()+offset.y())
-                x2=math.floor(item_box.bottomRight().x()+offset.x())
-                y2=math.floor(item_box.bottomRight().y()+offset.y())
-                box=AnnotaVO()
-                box.label=item.label.id if item.label else None
-                box.entry=self.source.id
-                box.kind="box"
-                box.points=",".join(map(str,[x1,y1,x2,y2]))
-                annot_list.append(box)
-            elif isinstance(item,EditablePolygon):
-                points=[[math.floor(pt.x()+offset.x()),math.floor(pt.y()+offset.y())] for pt in item.points]
-                points=np.asarray(points).flatten().tolist()
-                poly=AnnotaVO()
-                poly.label=item.label.id if item.label else None
-                poly.entry=self.source.id
-                poly.kind="polygon"
-                poly.points=",".join(map(str,points))
-                annot_list.append(poly)
-        self._annot_dao.save(self.source.id, annot_list)
+            image_rect : QRectF=self.viewer.pixmap.sceneBoundingRect()
+            image_offset = QPointF(image_rect .width()/2,image_rect .height()/2)
+            if isinstance(item,EditableItem):
+                a=AnnotaVO()
+                a.label=item.label.id if item.label else None
+                a.entry=self.source.id
+                a.kind=item.shape_type
+                a.points=item.coordinates(image_offset)
+                annotations.append(a)
+        self._annot_dao.save(self.source.id, annotations)
 
-    def btn_save_annotations_clicked_slot(self):
+    @gui_exception
+    def btn_save_annotations_clicked_slot(self,*args, **kwargs):
         self.save_annotations()
+        GUIUtilities.show_info_message("Annotations saved successfully", "Information")
 
     def _scene_item_added(self, item: QGraphicsItem):
         item.tag = self.source
@@ -504,6 +504,11 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.load_images()
         self.load_models()
         self.load_labels()
+
+    def load_image(self):
+        self.load_image_annotations()
+        self.load_image_label()
+
 
 
 

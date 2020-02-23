@@ -1,8 +1,6 @@
 from PyQt5.QtCore import QObject,pyqtSignal
 from PyQt5.QtWidgets import QGraphicsScene,QGraphicsItem
-
-from view.widgets.image_viewer.box_item import EditableBox
-from view.widgets.image_viewer.polygon_item import EditablePolygon
+from view.widgets.image_viewer.items import EditableItem
 
 
 class ImageViewerScene(QGraphicsScene, QObject):
@@ -14,10 +12,10 @@ class ImageViewerScene(QGraphicsScene, QObject):
 
     def addItem(self, item: QGraphicsItem) -> None:
         super(ImageViewerScene, self).addItem(item)
-        if isinstance(item, EditableBox) or isinstance(item, EditablePolygon):
+        if isinstance(item, EditableItem):
             self.itemAdded.emit(item)
 
     def removeItem(self, item: QGraphicsItem) -> None:
         super(ImageViewerScene, self).removeItem(item)
-        if isinstance(item,EditableBox) or isinstance(item,EditablePolygon):
+        if isinstance(item,EditableItem):
             self.itemDeleted.emit(item)
