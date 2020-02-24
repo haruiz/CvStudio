@@ -52,7 +52,7 @@ CVStudio supports:
     - Using CPU:<br>
     > `conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge`
 
-## Download models
+**Download models**
 
 **Windows**
 > `Invoke-WebRequest -OutFile ./models/MS_DeepLab_resnet_trained_VOC.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth`
@@ -65,7 +65,8 @@ CVStudio supports:
 
 > `wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth -P ./models`
 
-* Run and enjoy CV-Studio Studio: 
+**Run and enjoy CVStudio**
+
   > `python cvstudio.py`
 
 
