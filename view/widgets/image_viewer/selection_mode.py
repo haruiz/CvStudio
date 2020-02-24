@@ -7,3 +7,4 @@ class SELECTION_MODE(Enum):
     ELLIPSE = auto()
     FREE=auto()
     NONE=auto()
+    EXTREME_POINTS = auto()

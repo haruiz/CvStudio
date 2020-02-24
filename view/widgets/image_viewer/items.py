@@ -141,7 +141,7 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
     square=QtGui.QPainterPath()
     square.addRect(QtCore.QRectF(-5,-5,10,10))
 
-    def __init__(self,index):
+    def __init__(self,index=None):
         super(EditablePolygonPoint,self).__init__()
         self.setPath(EditablePolygonPoint.circle)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable,True)
@@ -205,6 +205,7 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
         if change == QtWidgets.QGraphicsItem.ItemPositionChange and self.isEnabled():
             self.signals.moved.emit(self,value)
         return super(EditablePolygonPoint,self).itemChange(change,value)
+
 
 
 class EditablePolygon(QtWidgets.QGraphicsPolygonItem, EditableItem):

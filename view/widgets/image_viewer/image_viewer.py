@@ -1,8 +1,11 @@
 import math
+import os
+from collections import OrderedDict
 
 import cv2
 import imutils
 import numpy as np
+
 from PIL import Image
 from PyQt5 import QtCore,QtGui
 from PyQt5.QtCore import QSize,QThreadPool,QPointF,QPoint,QRectF,QItemSelection,QModelIndex
@@ -37,6 +40,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.setupUi(self)
         self.viewer=ImageViewer()
         self.viewer.scene().itemAdded.connect(self._scene_item_added)
+        self.viewer.extreme_points_selection_done_sgn.connect(self.extreme_points_selection_done_slot)
         self.center_layout.addWidget(self.viewer,0,0)
 
         # self._label_background=QLabel()
@@ -313,6 +317,8 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         try:
+            self.viewer.vline.hide()
+            self.viewer.hline.hide()
             row = self.images_list_widget.currentRow()
             last_index = self.images_list_widget.count() - 1
             if event.key() == QtCore.Qt.Key_A:
@@ -366,7 +372,6 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def autolabel(self, repo, model_name):
         def do_work():
             try:
-                print(repo, model_name)
                 from PIL import Image
                 from torchvision import transforms
                 import torch
@@ -442,11 +447,13 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.btn_enable_none_selection=ImageButton(icon=GUIUtilities.get_icon("cursor.png"),size=icon_size)
         self.btn_save_annotations = ImageButton(icon=GUIUtilities.get_icon("save-icon.png"),size=icon_size)
         self.btn_clear_annotations=ImageButton(icon=GUIUtilities.get_icon("clean.png"),size=icon_size)
+        self.btn_supervised_annotation_tools = ImageButton(icon=GUIUtilities.get_icon("robotic-hand.png"), size=icon_size)
 
         self.actions_layout.addWidget(self.btn_enable_rectangle_selection)
         self.actions_layout.addWidget(self.btn_enable_polygon_selection)
         self.actions_layout.addWidget(self.btn_enable_circle_selection)
         self.actions_layout.addWidget(self.btn_enable_free_selection)
+        self.actions_layout.addWidget(self.btn_supervised_annotation_tools)
         self.actions_layout.addWidget(self.btn_enable_none_selection)
         self.actions_layout.addWidget(self.btn_clear_annotations)
         self.actions_layout.addWidget(self.btn_save_annotations)
@@ -458,6 +465,18 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.btn_enable_none_selection.clicked.connect(self.btn_enable_none_selection_clicked_slot)
         self.btn_enable_circle_selection.clicked.connect(self.btn_enable_circle_selection_clicked_slot)
         self.btn_clear_annotations.clicked.connect(self.btn_clear_annotations_clicked_slot)
+        self.btn_supervised_annotation_tools.clicked.connect(self.btn_supervised_annotation_tools_clicked_clot)
+
+    def btn_supervised_annotation_tools_clicked_clot(self):
+        menu=QMenu()
+        menu.setCursor(QtCore.Qt.PointingHandCursor)
+        ex_points_action = QAction("Extreme Points")
+        ex_points_action.setIcon(GUIUtilities.get_icon("points.png"))
+        menu.addAction(ex_points_action)
+        curr_action=menu.exec_(QCursor.pos())
+        if curr_action == ex_points_action:
+            self.viewer.selection_mode = SELECTION_MODE.EXTREME_POINTS
+
 
     def btn_clear_annotations_clicked_slot(self):
         self.viewer.remove_annotations()
@@ -508,6 +527,102 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def load_image(self):
         self.load_image_annotations()
         self.load_image_label()
+
+    @gui_exception
+    def extreme_points_selection_done_slot(self, points):
+        import torch
+        from collections import OrderedDict
+        from PIL import Image
+        import numpy as np
+        from torch.nn.functional import upsample
+        from contrib.dextr import deeplab_resnet  as resnet
+        from contrib.dextr import helpers
+        modelName='dextr_pascal-sbd'
+        pad=50
+        thres=0.8
+        gpu_id=0
+
+        def do_work():
+            device=torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
+            #  Create the network and load the weights
+            net=resnet.resnet101(1,nInputChannels=4,classifier='psp')
+            model_path = os.path.abspath("./models/{}.pth".format(modelName))
+            state_dict_checkpoint=torch.load(model_path, map_location=lambda storage,loc: storage)
+
+            if 'module.' in list(state_dict_checkpoint.keys())[0]:
+                new_state_dict=OrderedDict()
+                for k,v in state_dict_checkpoint.items():
+                    name=k[7:]  # remove `module.` from multi-gpu training
+                    new_state_dict[name]=v
+            else:
+                new_state_dict=state_dict_checkpoint
+            net.load_state_dict(new_state_dict)
+            net.eval()
+            net.to(device)
+
+            #  Read image and click the points
+            image=np.array(Image.open(self.source.file_path))
+            extreme_points_ori = np.asarray(points).astype(np.int)
+            with torch.no_grad():
+                #  Crop image to the bounding box from the extreme points and resize
+                bbox=helpers.get_bbox(image,points=extreme_points_ori,pad=pad,zero_pad=True)
+                crop_image=helpers.crop_from_bbox(image,bbox,zero_pad=True)
+                resize_image=helpers.fixed_resize(crop_image,(512,512)).astype(np.float32)
+
+                #  Generate extreme point heat map normalized to image values
+                extreme_points=extreme_points_ori-[np.min(extreme_points_ori[:,0]),np.min(extreme_points_ori[:,1])]+[pad,pad]
+                extreme_points=(512*extreme_points*[1/crop_image.shape[1],1/crop_image.shape[0]]).astype(np.int)
+                extreme_heatmap=helpers.make_gt(resize_image,extreme_points,sigma=10)
+                extreme_heatmap=helpers.cstm_normalize(extreme_heatmap,255)
+
+                #  Concatenate inputs and convert to tensor
+                input_dextr=np.concatenate((resize_image,extreme_heatmap[:,:,np.newaxis]),axis=2)
+                inputs=torch.from_numpy(input_dextr.transpose((2,0,1))[np.newaxis,...])
+
+                # Run a forward pass
+                inputs=inputs.to(device)
+                outputs=net.forward(inputs)
+                outputs=upsample(outputs,size=(512,512),mode='bilinear',align_corners=True)
+                outputs=outputs.to(torch.device('cpu'))
+
+                pred=np.transpose(outputs.data.numpy()[0,...],(1,2,0))
+                pred=1/(1+np.exp(-pred))
+                pred=np.squeeze(pred)
+                result=helpers.crop2fullmask(pred,bbox,im_size=image.shape[:2],zero_pad=True,relax=pad) > thres
+                binary = np.zeros_like(result, dtype=np.uint8)
+                binary[result]=255
+                contour_list=cv2.findContours(binary.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+                contour_list=imutils.grab_contours(contour_list)
+                contours = []
+                for contour in contour_list:
+                    c_points=np.vstack(contour).squeeze().tolist()
+                    contours.append(c_points)
+            return contours
+
+        def done_work(contours):
+            self._loading_dialog.close()
+            if contours:
+                self.viewer.clear_extreme_points()
+                for c in contours:
+                    c_points=[]
+                    for i in range(0,len(c),10):
+                        c_points.append(c[i])
+                    if len(c_points) > 5:
+                        polygon=EditablePolygon()
+                        self.viewer._scene.addItem(polygon)
+                        bbox: QRectF=self.viewer.pixmap.boundingRect()
+                        offset=QPointF(bbox.width()/2,bbox.height()/2)
+                        for point in c_points:
+                            polygon.addPoint(QPoint(point[0] - offset.x(),point[1] - offset.y()))
+
+        worker=Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)
+        self._loading_dialog.exec_()
+
+
+
+
 
 
 

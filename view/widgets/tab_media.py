@@ -79,13 +79,13 @@ class MediaTabWidget(QWidget):
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
 
-    def open_file(self,item: DatasetEntryVO):
+    def open_file(self,entry: DatasetEntryVO):
         tab_widget_manager: QTabWidget=self.window().tab_widget_manager
         tab_widget=ImageViewerWidget()
-        tab_widget.source=item
+        tab_widget.source=entry
         tab_widget.bind()
         tab_widget.layout().setContentsMargins(0,0,0,0)
-        index = tab_widget_manager.addTab(tab_widget,item.file_path)
+        index = tab_widget_manager.addTab(tab_widget,entry.file_path)
         tab_widget_manager.setCurrentIndex(index)
 
     @gui_exception

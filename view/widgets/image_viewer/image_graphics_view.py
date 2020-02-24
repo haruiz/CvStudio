@@ -1,19 +1,21 @@
 import math
+from queue import Queue
 
 from PyQt5 import QtGui,QtCore
-from PyQt5.QtCore import QObject,QPoint,QRect,QPointF,QSize,QRectF
+from PyQt5.QtCore import QObject,QPoint,QRect,QPointF,QSize,QRectF,pyqtSignal
 from PyQt5.QtGui import QPainter,QPen,QPixmap,QColor,QWheelEvent,QPainterPath
 from PyQt5.QtWidgets import QGraphicsView,QGraphicsLineItem,QRubberBand,QGraphicsSceneHoverEvent,QGraphicsPathItem, \
     QGraphicsEllipseItem
 
-from view.widgets.image_viewer.items import EditableBox,EditableEllipse,EditablePolygon,EditableItem
+from view.widgets.image_viewer.items import EditableBox,EditableEllipse,EditablePolygon,EditableItem, \
+    EditablePolygonPoint
 from view.widgets.image_viewer.image_pixmap_item import ImagePixmap
 from view.widgets.image_viewer.image_viewer_scene import ImageViewerScene
 from view.widgets.image_viewer.selection_mode import SELECTION_MODE
 
 
 class ImageViewer(QGraphicsView,QObject):
-
+    extreme_points_selection_done_sgn = pyqtSignal(list)
     def __init__(self,parent=None):
         super(ImageViewer,self).__init__(parent)
         self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
@@ -49,6 +51,10 @@ class ImageViewer(QGraphicsView,QObject):
         self._current_label = None
         self._last_click_point = None
         self._current_ellipse = None
+
+        # extreme points selection
+        self._extreme_points = Queue(maxsize = 4)
+
 
     @property
     def current_label(self):
@@ -92,6 +98,7 @@ class ImageViewer(QGraphicsView,QObject):
         self._current_free_path=None
         self._current_ellipse = None
         self._is_drawing=value == SELECTION_MODE.FREE
+        self.clear_extreme_points()
         if value == SELECTION_MODE.NONE:
             self.enable_items(True)
         else:
@@ -219,57 +226,72 @@ class ImageViewer(QGraphicsView,QObject):
         super(ImageViewer, self).mouseMoveEvent(evt)
 
     def mousePressEvent(self, evt: QtGui.QMouseEvent) -> None:
-
-        if evt.buttons() == QtCore.Qt.LeftButton:
-            if self.selection_mode == SELECTION_MODE.BOX:
-                self.setDragMode(QGraphicsView.NoDrag)
-                self._box_origin=evt.pos()
-                self._box_picker.setGeometry(QRect(self._box_origin,QSize()))
-                self._box_picker.show()
-            elif self._selection_mode == SELECTION_MODE.POLYGON:
-                pixmap_rect: QRectF=self._pixmap.boundingRect()
-                new_point=self.mapToScene(evt.pos())
-                # consider only the points into the image
-                if  pixmap_rect.contains(new_point):
-                    if self._current_polygon is None:
-                        self._current_polygon=EditablePolygon()
-                        self._current_polygon.signals.deleted.connect(self.delete_polygon_slot)
-                        self._scene.addItem(self._current_polygon)
-                        self._current_polygon.addPoint(new_point)
-                    else:
-                        self._current_polygon.addPoint(new_point)
-            elif self._selection_mode == SELECTION_MODE.ELLIPSE:
-                pixmap_rect: QRectF=self._pixmap.boundingRect()
-                mouse_pos=self.mapToScene(evt.pos())
-                if pixmap_rect.contains(mouse_pos):
+        try:
+            pixmap_rect: QRectF=self._pixmap.boundingRect()
+            if evt.buttons() == QtCore.Qt.LeftButton:
+                if self.selection_mode == SELECTION_MODE.BOX:
                     self.setDragMode(QGraphicsView.NoDrag)
-                    ellipse_rec = QtCore.QRectF(mouse_pos.x(),mouse_pos.y(),0,0)
-                    self._current_ellipse = EditableEllipse()
-                    self._current_ellipse.label = self._current_label
-                    self._current_ellipse.setRect(ellipse_rec)
-                    self._scene.addItem(self._current_ellipse)
+                    self._box_origin=evt.pos()
+                    self._box_picker.setGeometry(QRect(self._box_origin,QSize()))
+                    self._box_picker.show()
+                elif self._selection_mode == SELECTION_MODE.POLYGON:
+                    new_point=self.mapToScene(evt.pos())
+                    # consider only the points into the image
+                    if  pixmap_rect.contains(new_point):
+                        if self._current_polygon is None:
+                            self._current_polygon=EditablePolygon()
+                            self._current_polygon.signals.deleted.connect(self.delete_polygon_slot)
+                            self._scene.addItem(self._current_polygon)
+                            self._current_polygon.addPoint(new_point)
+                        else:
+                            self._current_polygon.addPoint(new_point)
+                elif self._selection_mode == SELECTION_MODE.ELLIPSE:
+                    mouse_pos=self.mapToScene(evt.pos())
+                    if pixmap_rect.contains(mouse_pos):
+                        self.setDragMode(QGraphicsView.NoDrag)
+                        ellipse_rec = QtCore.QRectF(mouse_pos.x(),mouse_pos.y(),0,0)
+                        self._current_ellipse = EditableEllipse()
+                        self._current_ellipse.label = self._current_label
+                        self._current_ellipse.setRect(ellipse_rec)
+                        self._scene.addItem(self._current_ellipse)
 
-            elif self._selection_mode == SELECTION_MODE.FREE:
-                # start drawing
-                new_point=self.mapToScene(evt.pos())
-                pixmap_rect: QRectF=self._pixmap.boundingRect()
-                # consider only the points into the image
-                if  pixmap_rect.contains(new_point):
-                    self.setDragMode(QGraphicsView.NoDrag)
-                    pen=QPen(QtGui.QColor(235,72,40))
-                    pen.setWidth(10)
-                    self._last_point_drawn=new_point
-                    self._current_free_path=QGraphicsPathItem()
-                    self._current_free_path.setOpacity(0.6)
-                    self._current_free_path.setPen(pen)
-                    painter=QPainterPath()
-                    painter.moveTo(self._last_point_drawn)
-                    self._current_free_path.setPath(painter)
-                    self._scene.addItem(self._current_free_path)
-        else:
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+                elif self._selection_mode == SELECTION_MODE.FREE:
+                    # start drawing
+                    new_point=self.mapToScene(evt.pos())
+                    # consider only the points into the image
+                    if  pixmap_rect.contains(new_point):
+                        self.setDragMode(QGraphicsView.NoDrag)
+                        pen=QPen(QtGui.QColor(235,72,40))
+                        pen.setWidth(10)
+                        self._last_point_drawn=new_point
+                        self._current_free_path=QGraphicsPathItem()
+                        self._current_free_path.setOpacity(0.6)
+                        self._current_free_path.setPen(pen)
+                        painter=QPainterPath()
+                        painter.moveTo(self._last_point_drawn)
+                        self._current_free_path.setPath(painter)
+                        self._scene.addItem(self._current_free_path)
+                elif self._selection_mode == SELECTION_MODE.EXTREME_POINTS:
 
-        super(ImageViewer,self).mousePressEvent(evt)
+                    mouse_pos=self.mapToScene(evt.pos())
+                    if pixmap_rect.contains(mouse_pos):
+                        if self._extreme_points.full():
+                            pass
+                        else:
+                            def delete_point_slot(idx):
+                                del self._extreme_points.queue[idx]
+                            idx = self._extreme_points.qsize()
+                            editable_pt=EditablePolygonPoint(idx)
+                            editable_pt.signals.deleted.connect(delete_point_slot)
+                            editable_pt.setPos(mouse_pos)
+                            self._scene.addItem(editable_pt)
+                            self._extreme_points.put(editable_pt)
+            else:
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+
+            super(ImageViewer,self).mousePressEvent(evt)
+        except Exception as ex:
+            print(ex)
 
     def mouseReleaseEvent(self, evt: QtGui.QMouseEvent) -> None:
         try:
@@ -313,14 +335,34 @@ class ImageViewer(QGraphicsView,QObject):
         except Exception as ex:
             print(ex)
 
+    def clear_extreme_points(self):
+        if self._extreme_points.qsize() > 0:
+            for pt in self._extreme_points.queue:
+                self._scene.removeItem(pt)
+            self._extreme_points.queue.clear()
+
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         if self._current_polygon and event.key() == QtCore.Qt.Key_Space:
-            #points=self._current_polygon.points
-            self._current_polygon.label=self.current_label
-            self._current_polygon=None
-            self.selection_mode = SELECTION_MODE.NONE
-            self._polygon_guide_line.hide()
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            if self.selection_mode == SELECTION_MODE.POLYGON:
+                #points=self._current_polygon.points
+                self._current_polygon.label=self.current_label
+                self._current_polygon=None
+                self.selection_mode = SELECTION_MODE.NONE
+                self._polygon_guide_line.hide()
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+        if self.selection_mode == SELECTION_MODE.EXTREME_POINTS and \
+                self._extreme_points.full():
+                image_rect: QRectF=self._pixmap.sceneBoundingRect()
+                image_offset=QPointF(image_rect.width()/2,image_rect.height()/2)
+                points = []
+                for pt in self._extreme_points.queue:
+                    pt: EditablePolygonPoint
+                    center = pt.sceneBoundingRect().center()
+                    x=math.floor(center.x()+image_offset.x())
+                    y=math.floor(center.y()+image_offset.y())
+                    points.append([x, y])
+                self.extreme_points_selection_done_sgn.emit(points)
+                self.selection_mode=SELECTION_MODE.NONE
         super(ImageViewer, self).keyPressEvent(event)
 
     def delete_polygon_slot(self,polygon: EditablePolygon):
