@@ -40,8 +40,8 @@ CVStudio supports:
 
 * Clone the repository:
   
-  ````console
-  git clone https://github.com/haruiz/CvStudio.git
+  ```console
+    git clone https://github.com/haruiz/CvStudio.git
   ```
 * Download and install [Anaconda](https://www.anaconda.com/distribution/#download) (Python 3+).
 * Open Anaconda Prompt, go to *CvStudio* directory and follow the next steps:
@@ -75,11 +75,11 @@ CVStudio supports:
     
     - Using GPU:<br>
     ```console
-    conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly
+        conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly
     ```
     - Using CPU:<br>
     ```console
-    conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge
+        conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge
     ```
 
 ### 2. Download models
@@ -93,13 +93,13 @@ This command must be executed from the CVStudio folder:
 **Linux**
 
 ```console
-wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth -P ./models
-wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth -P ./models
+    wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth -P ./models
+    wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth -P ./models
 ```
 
 ### 3. Run CVStudio
 ```console
-  python cvstudio.py
+    python cvstudio.py
 ```
 
 
