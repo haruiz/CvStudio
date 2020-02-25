@@ -39,11 +39,17 @@ CVStudio supports:
 **Windows + Anaconda:**
 
 * Clone the repository:
-  > `git clone https://github.com/haruiz/CvStudio.git`
+  
+  ````console
+  git clone https://github.com/haruiz/CvStudio.git
+  ```
 * Download and install [Anaconda](https://www.anaconda.com/distribution/#download) (Python 3+).
 * Open Anaconda Prompt, go to *CvStudio* directory and follow the next steps:
-  * Create a new environment with Python 3.6:  
-    > `conda create --name cvstudio python=3.6`
+  * Create a new environment with Python 3.6:
+  
+  ```console  
+    conda create --name cvstudio python=3.6
+  ```
   * Install required libraries:
   
   ```console
@@ -68,26 +74,33 @@ CVStudio supports:
     in the official site. For the purpose of this tutorial we are selecting the following configuration:
     
     - Using GPU:<br>
-    > `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly`
+    ```console
+    conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly
+    ```
     - Using CPU:<br>
-    > `conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge`
+    ```console
+    conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge
+    ```
 
 ### 2. Download models
 This command must be executed from the CVStudio folder:
 **Windows (PowerShell)**
-> `Invoke-WebRequest -OutFile ./models/MS_DeepLab_resnet_trained_VOC.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth`
-
-> `Invoke-WebRequest -OutFile ./models/dextr_pascal-sbd.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth`
+ ```console
+    Invoke-WebRequest -OutFile ./models/MS_DeepLab_resnet_trained_VOC.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth
+    Invoke-WebRequest -OutFile ./models/dextr_pascal-sbd.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth
+```
 
 **Linux**
 
-> `wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth -P ./models`
-
-> `wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth -P ./models`
+```console
+wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth -P ./models
+wget https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth -P ./models
+```
 
 ### 3. Run CVStudio
-
-  > `python cvstudio.py`
+```console
+  python cvstudio.py
+```
 
 
 ## Documentation
