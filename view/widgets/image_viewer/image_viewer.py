@@ -375,6 +375,8 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 from PIL import Image
                 from torchvision import transforms
                 import torch
+                gpu_id=0
+                device=torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
                 model=torch.hub.load(repo,model_name,pretrained=True)
                 model.eval()
                 input_image=Image.open(self.source.file_path)
@@ -385,10 +387,10 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 ])
                 input_tensor=preprocess(input_image)
                 input_batch=input_tensor.unsqueeze(0)  # create a mini-batch as expected by the model
-                # move the param and model to GPU for speed if available
+                # # move the param and model to GPU for speed if available
                 if torch.cuda.is_available():
-                    input_batch=input_batch.to('cuda')
-                    model.to('cuda')
+                    input_batch=input_batch.to(device)
+                    model.to(device)
                 with torch.no_grad():
                     output=model(input_batch)['out'][0]
                 output_predictions=output.argmax(0)
@@ -416,21 +418,27 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 return None,ex
 
         def done_work(result):
-            self._loading_dialog.close()
-            classes_map,err=result
-            if err:
-                return
-            for class_idx,contours in classes_map.items():
-                for c in contours:
-                    points=[]
-                    for i in range(0,len(c),10):
-                        points.append(c[i])
-                    polygon=EditablePolygon()
-                    self.viewer._scene.addItem(polygon)
-                    bbox: QRectF=self.viewer.pixmap.boundingRect()
-                    offset=QPointF(bbox.width()/2,bbox.height()/2)
-                    for point in points:
-                        polygon.addPoint(QPoint(point[0] - offset.x(),point[1] - offset.y()))
+            try:
+                self._loading_dialog.close()
+                classes_map,err=result
+                if err:
+                    return
+                for class_idx,contours in classes_map.items():
+                    if len(contours) > 0:
+                        for c in contours:
+                            points=[]
+                            for i in range(0,len(c),10):
+                                points.append(c[i])
+                            if len(points) > 5:
+                                polygon=EditablePolygon()
+                                self.viewer._scene.addItem(polygon)
+                                bbox: QRectF=self.viewer.pixmap.boundingRect()
+                                offset=QPointF(bbox.width()/2,bbox.height()/2)
+                                for point in points:
+                                    if isinstance(point, list) and len(point) == 2:
+                                        polygon.addPoint(QPoint(point[0]-offset.x(),point[1]-offset.y()))
+            except Exception as ex:
+                print(ex)
 
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
@@ -600,20 +608,23 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             return contours
 
         def done_work(contours):
-            self._loading_dialog.close()
-            if contours:
-                self.viewer.clear_extreme_points()
-                for c in contours:
-                    c_points=[]
-                    for i in range(0,len(c),10):
-                        c_points.append(c[i])
-                    if len(c_points) > 5:
-                        polygon=EditablePolygon()
-                        self.viewer._scene.addItem(polygon)
-                        bbox: QRectF=self.viewer.pixmap.boundingRect()
-                        offset=QPointF(bbox.width()/2,bbox.height()/2)
-                        for point in c_points:
-                            polygon.addPoint(QPoint(point[0] - offset.x(),point[1] - offset.y()))
+            try:
+                self._loading_dialog.close()
+                if contours:
+                    self.viewer.clear_extreme_points()
+                    for c in contours:
+                        c_points=[]
+                        for i in range(0,len(c),10):
+                            c_points.append(c[i])
+                        if len(c_points) > 5:
+                            polygon=EditablePolygon()
+                            self.viewer._scene.addItem(polygon)
+                            bbox: QRectF=self.viewer.pixmap.boundingRect()
+                            offset=QPointF(bbox.width()/2,bbox.height()/2)
+                            for point in c_points:
+                                polygon.addPoint(QPoint(point[0] - offset.x(),point[1] - offset.y()))
+            except Exception as ex:
+                print(ex)
 
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
