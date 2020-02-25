@@ -1,6 +1,6 @@
 import typing
 
-from peewee import chunked
+from peewee import *
 
 from dao import db, AnnotationEntity, LabelEntity, DatasetEntryEntity
 from vo import AnnotaVO, LabelVO
@@ -61,7 +61,7 @@ class AnnotaDao:
                 lbl.name.alias("label_name"),
                 lbl.color.alias("label_color")
             )
-                .join(lbl, on=(anns.label == lbl.id), join_type="LEFT")
+                .join(lbl, on=(anns.label == lbl.id),join_type=JOIN.LEFT_OUTER)
                 .where(anns.entry == entity_id)
         )
         cursor = query.dicts().execute()
@@ -112,7 +112,7 @@ class AnnotaDao:
                 lbl.color.alias("label_color")
             )
                 .join(ds_entry, on=(ann.entry == ds_entry.id))
-                .join(lbl, on=(ann.label == lbl.id), join_type="LEFT")
+                .join(lbl, on=(ann.label == lbl.id), join_type=JOIN.LEFT_OUTER)
                 .where(ds_entry.dataset == dataset_id)
         )
         cursor = query.dicts().execute()
@@ -137,7 +137,7 @@ class AnnotaDao:
                 l.color.alias("label_color")
             )
                 .join(i, on=(a.entry == i.id))
-                .join(l, on=(a.label == l.id), join_type="LEFT")
+                .join(l, on=(a.label == l.id), join_type=JOIN.LEFT_OUTER)
                 .where(i.dataset == dataset_id)
         )
         cursor = query.dicts().execute()

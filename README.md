@@ -45,7 +45,25 @@ CVStudio supports:
   * Create a new environment with Python 3.6:  
     > `conda create --name cvstudio python=3.6`
   * Install required libraries:
-    > `pip install -r pip_req.txt`
+  
+  ```console
+    pip install matplotlib
+    pip install numpy
+    pip install opencv-contrib-python
+    pip install pillow
+    pip install tqdm
+    pip install scipy
+    pip install "dask[complete]"
+    pip install more-itertools
+    pip install pandas
+    pip install PyQt5
+    pip install imutils
+    pip install peewee
+    pip install -U marshmallow
+    pip install hurry.filesize
+    pip install Mako
+    ```
+    
   * Install [PyTorch](https://pytorch.org/) with conda following the [instructions](https://pytorch.org/get-started/locally/)
     in the official site. For the purpose of this tutorial we are selecting the following configuration:
     
@@ -55,9 +73,8 @@ CVStudio supports:
     > `conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge`
 
 ### 2. Download models
-
-
-**Windows**
+This command must be executed from the CVStudio folder:
+**Windows (PowerShell)**
 > `Invoke-WebRequest -OutFile ./models/MS_DeepLab_resnet_trained_VOC.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/MS_DeepLab_resnet_trained_VOC.pth`
 
 > `Invoke-WebRequest -OutFile ./models/dextr_pascal-sbd.pth https://data.vision.ee.ethz.ch/csergi/share/DEXTR/dextr_pascal-sbd.pth`
