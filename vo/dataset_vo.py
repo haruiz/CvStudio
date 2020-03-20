@@ -6,6 +6,19 @@ class DatasetVO:
         self._description = ""
         self._data_type = ""
         self._size = 0
+        self._count = 0
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        if self._size and self._size > 0:
+            self._count = value
+        else:
+            self._count = 0
+
 
     @property
     def size(self):

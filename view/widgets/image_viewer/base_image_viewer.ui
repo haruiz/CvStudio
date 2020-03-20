@@ -104,9 +104,15 @@
        </item>
        <item>
         <widget class="QFrame" name="frame">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>2</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
-           <width>0</width>
+           <width>800</width>
            <height>0</height>
           </size>
          </property>
@@ -143,13 +149,13 @@
      <widget class="QFrame" name="frame_2">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>2</horstretch>
+        <horstretch>1</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
-        <width>350</width>
+        <width>300</width>
         <height>0</height>
        </size>
       </property>
@@ -240,30 +246,25 @@
             <property name="currentIndex">
              <number>1</number>
             </property>
-            <widget class="QWidget" name="page_3">
+            <widget class="QWidget" name="img_adjust_page">
              <property name="geometry">
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>685</width>
+               <width>276</width>
                <height>296</height>
               </rect>
              </property>
              <attribute name="label">
-              <string>Annotations</string>
+              <string>Image Adjustment</string>
              </attribute>
-             <layout class="QVBoxLayout" name="verticalLayout_8">
-              <item>
-               <layout class="QVBoxLayout" name="tree_view_annot_layout"/>
-              </item>
-             </layout>
             </widget>
             <widget class="QWidget" name="page_4">
              <property name="geometry">
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>685</width>
+               <width>276</width>
                <height>296</height>
               </rect>
              </property>

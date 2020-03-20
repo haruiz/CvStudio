@@ -47,7 +47,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.keyPressed.emit(evt)
         super(MainWindow, self).keyPressEvent(evt)
 
-    @QtCore.pyqtSlot(str)
     def item_click_signal_slot(self, object_name):
         try:
             self.tab_widget_manager.clear()

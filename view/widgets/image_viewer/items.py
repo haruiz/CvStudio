@@ -3,9 +3,9 @@ import math
 
 from PyQt5 import QtGui,QtWidgets,QtCore
 from PyQt5.QtCore import QObject,pyqtSignal,QPointF,QRectF
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor,QPalette
 from PyQt5.QtWidgets import QGraphicsRectItem,QMenu,QGraphicsSceneContextMenuEvent,QAction,QGraphicsItem, \
-    QGraphicsEllipseItem,QAbstractGraphicsShapeItem,QGraphicsSceneMouseEvent
+    QGraphicsEllipseItem,QAbstractGraphicsShapeItem,QGraphicsSceneMouseEvent,QApplication
 from dao import LabelDao
 from vo import LabelVO
 import numpy as np
@@ -15,6 +15,8 @@ class EditableItemSignals(QObject):
     moved=pyqtSignal(QGraphicsItem,QPointF)
     doubleClicked=pyqtSignal(QGraphicsItem)
     clicked = pyqtSignal(QGraphicsItem)
+
+
 
 
 class EditableItem(QAbstractGraphicsShapeItem):
@@ -27,14 +29,47 @@ class EditableItem(QAbstractGraphicsShapeItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges,True)
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.setOpacity(0.5)
-        self._pen_color=QColor(235,72,40)
-        self.setPen(QtGui.QPen(self._pen_color,1))
-        self._brush_color=QColor(255,0,0,100)
         self.signals=EditableItemSignals()
         self._labels_dao = LabelDao()
         self._label = LabelVO()
         self._tag=None
         self._shape_type = None
+
+        app=QApplication.instance()
+        color=app.palette().color(QPalette.Highlight)
+        self._pen_color = color
+        self._pen_width = 2
+        self._brush_color = color
+
+        self.setPen(QtGui.QPen(self._pen_color,self._pen_width))
+
+
+    @property
+    def pen_color(self):
+        return self._pen_color
+
+    @pen_color.setter
+    def pen_color(self, value):
+        self._pen_color = value
+        self.setPen(QtGui.QPen(self._pen_color,self._pen_width))
+
+    @property
+    def brush_color(self):
+        return self._brush_color
+
+    @brush_color.setter
+    def brush_color(self, value):
+        self._brush_color = value
+        self.setBrush(self._brush_color)
+
+    @property
+    def pen_width(self):
+        return self._pen_width
+
+    @pen_width.setter
+    def pen_width(self, value):
+        self._pen_width = value
+        self.pen().setWidth(self._pen_width)
 
     @property
     def shape_type(self):
@@ -67,19 +102,19 @@ class EditableItem(QAbstractGraphicsShapeItem):
 
     def hoverEnterEvent(self, event):
         self.setBrush(self._brush_color)
-        self.setPen(QtGui.QPen(self._pen_color,2))
+        self.setPen(QtGui.QPen(self._pen_color,self._pen_width))
         super(EditableItem, self).hoverEnterEvent(event)
         
     def hoverLeaveEvent(self, event):
         self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
-        self.setPen(QtGui.QPen(self._pen_color,2))
+        self.setPen(QtGui.QPen(self._pen_color,self._pen_width))
         super(EditableItem, self).hoverLeaveEvent(event)
 
     def contextMenuEvent(self, evt: QGraphicsSceneContextMenuEvent) -> None:
         menu=QMenu()
         action_delete: QAction=menu.addAction("Delete")
         if self.tag:
-            dataset = self.tag.dataset
+            dataset = self.tag
             result = self._labels_dao\
                  .fetch_all(dataset)
             if result:
@@ -137,7 +172,7 @@ class EditablePolygonPointSignals(QObject):
 
 class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
     circle=QtGui.QPainterPath()
-    circle.addEllipse(QtCore.QRectF(-3,-3,5,5))
+    circle.addRect(QtCore.QRectF(-3,-3,5,5))
     square=QtGui.QPainterPath()
     square.addRect(QtCore.QRectF(-5,-5,10,10))
 
@@ -152,9 +187,14 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
         self.setZValue(11)
         self.signals=EditablePolygonPointSignals()
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self._pen_color = QtGui.QColor(235,72,40)
-        self._brush_color = QtGui.QColor(235,72,40)
-        self.setPen(QtGui.QPen(self._pen_color,2))
+
+        app=QApplication.instance()
+        color=app.palette().color(QPalette.Highlight)
+        self._pen_color=color
+        self._pen_width=2
+        self._brush_color=color
+
+        self.setPen(QtGui.QPen(self._pen_color,self._pen_width))
         self.setBrush(self._brush_color)
 
     @property
@@ -162,18 +202,28 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
         return self._pen_color
 
     @pen_color.setter
-    def pen_color(self, value):
-        self._pen_color = value
-        self.setPen(QtGui.QPen(self._pen_color,2))
+    def pen_color(self,value):
+        self._pen_color=value
+        self.setPen(QtGui.QPen(self._pen_color,self._pen_width))
 
     @property
     def brush_color(self):
         return self._brush_color
 
     @brush_color.setter
-    def brush_color(self, value):
-        self._brush_color = value
+    def brush_color(self,value):
+        self._brush_color=value
         self.setBrush(self._brush_color)
+
+    @property
+    def pen_width(self):
+        return self._pen_width
+
+    @pen_width.setter
+    def pen_width(self,value):
+        self._pen_width=value
+        self.pen().setWidth(self._pen_width)
+
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         self.signals.doubleClicked.emit(self)
@@ -260,6 +310,7 @@ class EditablePolygon(QtWidgets.QGraphicsPolygonItem, EditableItem):
         item=EditablePolygonPoint(len(self._points)-1)
         item.brush_color=self._brush_color
         item.pen_color=self._pen_color
+        item.pen_width = self._pen_width
         item.signals.moved.connect(self.point_moved_slot)
         item.signals.deleted.connect(self.point_deleted_slot)
         item.signals.doubleClicked.connect(self.point_double_clicked)

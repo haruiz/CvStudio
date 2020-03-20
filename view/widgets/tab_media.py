@@ -5,13 +5,14 @@ from PyQt5.QtWidgets import QTabWidget,QWidget,QVBoxLayout
 
 from dao import DatasetDao
 from decor import gui_exception
-from util import Worker,GUIUtilities as gui
+from util import Worker,GUIUtilities as gui,GUIUtilities
 from view.widgets.gallery.card import GalleryCard
 from view.widgets.gallery import GalleryAction
 from view.widgets.image_viewer.image_viewer import ImageViewerWidget
 from vo import DatasetEntryVO,DatasetVO
 from .gallery import Gallery
 from .loading_dialog import QLoadingDialog
+import cv2
 
 
 class MediaTabWidget(QWidget):
@@ -53,12 +54,10 @@ class MediaTabWidget(QWidget):
         self._thread_pool.start(worker)
         self._loading_dialog.exec_()
 
-    @pyqtSlot(GalleryCard,Gallery)
     def gallery_card_double_click_slot(self,card: GalleryCard,gallery: Gallery):
         #self.open_file(card.tag)
         pass
 
-    @pyqtSlot(list)
     @gui_exception
     def gallery_files_dropped_slot(self,files: []):
         entries_list=[]
@@ -82,11 +81,13 @@ class MediaTabWidget(QWidget):
     def open_file(self,entry: DatasetEntryVO):
         tab_widget_manager: QTabWidget=self.window().tab_widget_manager
         tab_widget=ImageViewerWidget()
-        tab_widget.source=entry
+        tab_widget.image=cv2.imread(entry.file_path)
+        tab_widget.tag = entry
         tab_widget.bind()
         tab_widget.layout().setContentsMargins(0,0,0,0)
         index = tab_widget_manager.addTab(tab_widget,entry.file_path)
         tab_widget_manager.setCurrentIndex(index)
+
 
     @gui_exception
     def card_action_clicked_slot(self,action_name: str,item: DatasetEntryVO):

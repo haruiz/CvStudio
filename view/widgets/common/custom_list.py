@@ -2,9 +2,9 @@ from PyQt5.QtWidgets import QListWidgetItem
 
 
 class CustomListWidgetItem(QListWidgetItem):
-    def __init__(self,*args, **kwargs):
-        super(CustomListWidgetItem, self).__init__(*args, **kwargs)
-        self._tag = None
+    def __init__(self,*args, tag=None):
+        super(CustomListWidgetItem, self).__init__(*args)
+        self._tag = tag
 
     @property
     def tag(self):

@@ -23,6 +23,12 @@ class GridCard(QFrame, QObject):
         self._title_widget.setStyleSheet("QLabel { font-size : 14px;}")
         self._title_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         self._title_widget.setScaledContents(True)
+
+        self._sub_title_widget=QLabel()
+        self._sub_title_widget.setStyleSheet("QLabel { font-size : 10px;}")
+        self._sub_title_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
+        self._sub_title_widget.setScaledContents(True)
+
         self._body_widget = None
 
         # layouts
@@ -41,6 +47,7 @@ class GridCard(QFrame, QObject):
         self._title_frame.setLayout(QVBoxLayout())
         self._title_frame.layout().setContentsMargins(2,2,2,2)
         self._title_frame.layout().addWidget(self._title_widget)
+        self._title_frame.layout().addWidget(self._sub_title_widget)
         size_policy=QSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
         size_policy.setVerticalStretch(1)
         self._title_frame.setSizePolicy(size_policy)
@@ -97,6 +104,14 @@ class GridCard(QFrame, QObject):
     @label.setter
     def label(self, value):
         self._title_widget.setText(value)
+
+    @property
+    def label2(self):
+        return self._sub_title_widget
+
+    @label2.setter
+    def label2(self,value):
+        self._sub_title_widget.setText(value)
 
     @property
     def buttons(self):

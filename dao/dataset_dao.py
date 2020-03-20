@@ -43,7 +43,6 @@ class DatasetDao:
             result.append(vo)
             for k, v in ds.items():
                 setattr(vo, k, v)
-
         return result
 
     @db.connection_context()
@@ -64,11 +63,9 @@ class DatasetDao:
             return vo
         return None
 
-
     @db.connection_context()
     def delete(self, id: int):
         results = DatasetEntity.delete_by_id(id)
-
         return results
 
     @db.atomic()
@@ -101,7 +98,8 @@ class DatasetDao:
                 ds.id,
                 ds.name,
                 ds.data_type,
-                fn.SUM(m.file_size).alias("size")
+                fn.SUM(m.file_size).alias("size"),
+                fn.COUNT(ds.id).alias("count")
             ).join(
                 m,
                 JOIN.LEFT_OUTER,
@@ -115,7 +113,6 @@ class DatasetDao:
             result.append(vo)
             for k, v in ds.items():
                 setattr(vo, k, v)
-
         return result
 
     @db.connection_context()

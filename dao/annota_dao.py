@@ -96,7 +96,6 @@ class AnnotaDao:
         result=list(query.dicts().execute())
         return result[0]["name"] if len(result) > 0 else None
 
-
     @db.connection_context()
     def fetch_all_by_dataset(self, dataset_id: int = None):
         ann = AnnotationEntity.alias("a")

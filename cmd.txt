@@ -1,1 +1,4 @@
 git filter-branch -f --index-filter "git rm --cached --ignore-unmatch fixtures/11_user_answer.json"
+pyuic5 -o ui_main_window.py ui_main_window.ui
+pyuic5 -o ui_main_window.py ui_main_window.ui
+pyuic5 -o base_image_viewer.py base_image_viewer.ui

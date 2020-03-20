@@ -11,13 +11,21 @@ from PyQt5.QtWidgets import QLayout,QGridLayout,QLayoutItem,QMessageBox,QApplica
 class GUIUtilities:
     @staticmethod
     def get_icon(img):
-        resource_path = os.path.abspath("./assets/icons/dark/{}".format(img))
+        app = QApplication.instance()
+        curr_theme = "light"
+        if app:
+            curr_theme = app.property("theme")
+        resource_path = os.path.abspath("./assets/icons/{}/{}".format(curr_theme, img))
 
         return QIcon(resource_path)
 
     @staticmethod
     def get_image(img):
-        resource_path = os.path.abspath("./assets/icons/dark/{}".format(img))
+        app=QApplication.instance()
+        curr_theme="light"
+        if app:
+            curr_theme=app.property("theme")
+        resource_path = os.path.abspath("./assets/icons/{}/{}".format(curr_theme, img))
         return QPixmap(resource_path)
 
     @staticmethod

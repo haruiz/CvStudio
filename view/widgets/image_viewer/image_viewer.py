@@ -3,56 +3,70 @@ import os
 from collections import OrderedDict
 
 import cv2
+import dask
 import imutils
+import kornia
 import numpy as np
+import torch
 
 from PIL import Image
 from PyQt5 import QtCore,QtGui
 from PyQt5.QtCore import QSize,QThreadPool,QPointF,QPoint,QRectF,QItemSelection,QModelIndex
-from PyQt5.QtGui import QPixmap,QCursor
+from PyQt5.QtGui import QPixmap,QCursor,QWheelEvent
 from PyQt5.QtWidgets import QWidget,QGraphicsItem,QAbstractItemView,QDialog,QAction, \
-    QLabel,QGraphicsScene,QMenu,QGraphicsDropShadowEffect
+    QLabel,QGraphicsScene,QMenu,QGraphicsDropShadowEffect,QFrame,QListWidgetItem,QBoxLayout,QVBoxLayout,QFormLayout, \
+    QSpinBox
 
+from constants import COCO_INSTANCE_CATEGORY_NAMES
 from core import HubClientFactory,Framework
 from dao import DatasetDao,AnnotaDao
 from dao.hub_dao import HubDao
 from dao.label_dao import LabelDao
 from decor import gui_exception,work_exception
-from util import GUIUtilities,Worker
+from util import GUIUtilities,Worker,ImageUtilities
 from view.forms import NewRepoForm
 from view.forms.label_form import NewLabelForm
+from view.widgets.double_slider import DoubleSlider
 from view.widgets.common.custom_list import CustomListWidgetItem
 from view.widgets.image_viewer import ImageViewer
-from view.widgets.image_viewer.selection_mode import SELECTION_MODE
+from view.widgets.image_viewer.selection_mode import SELECTION_TOOL
 from view.widgets.labels_tableview import LabelsTableView
 from view.widgets.loading_dialog import QLoadingDialog
 from view.widgets.models_treeview import ModelsTreeview
-from vo import LabelVO,DatasetEntryVO,AnnotaVO
+from vo import LabelVO,DatasetEntryVO,AnnotaVO,HubVO
 from .base_image_viewer import Ui_Image_Viewer_Widget
 from .items import EditableBox,EditablePolygon,EditableItem,EditableEllipse
 from ..image_button import ImageButton
 import more_itertools
+import json
 
+
+class SeparatorWidget(QFrame):
+    def __init__(self,parent=None):
+        super(SeparatorWidget, self).__init__(parent)
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
+        self.setStyleSheet('''
+            QFrame{
+                background-color: black;
+            }
+        ''')
 
 class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
     def __init__(self,parent=None):
         super(ImageViewerWidget,self).__init__(parent)
         self.setupUi(self)
-        self.viewer=ImageViewer()
-        self.viewer.scene().itemAdded.connect(self._scene_item_added)
-        self.viewer.extreme_points_selection_done_sgn.connect(self.extreme_points_selection_done_slot)
-        self.center_layout.addWidget(self.viewer,0,0)
 
-        # self._label_background=QLabel()
-        # self._label_background.setFixedHeight(40)
-        # image = GUIUtilities.get_image("label.png")
-        # self._label_background.setPixmap(image.scaledToHeight(40))
-        # self.center_layout.addWidget(self._label_background,0,0,QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        self.image_viewer=ImageViewer()
+        # self.image_viewer.scene().itemAdded.connect(self._scene_item_added)
+        # self.image_viewer.key_press_sgn.connect(self.viewer_keyPressEvent)
+        self.image_viewer.points_selection_sgn.connect(self.extreme_points_selection_done_slot)
+        self.center_layout.addWidget(self.image_viewer,0,0)
 
-        self._label=QLabel()
-        self._label.setVisible(False)
-        self._label.setMargin(5)
-        self._label.setStyleSheet('''
+        self._class_label=QLabel()
+        self._class_label.setVisible(False)
+        self._class_label.setMargin(5)
+        self._class_label.setStyleSheet('''
             QLabel{
             font: 12pt;
             border-radius: 25px;
@@ -63,27 +77,19 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         ''')
         shadow=QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(8)
-        # shadow.setColor(QtGui.QColor(76,35,45).lighter())
         shadow.setColor(QtGui.QColor(94, 93, 90).lighter())
         shadow.setOffset(2)
-        self._label.setGraphicsEffect(shadow)
-        self.center_layout.addWidget(self._label,0,0,QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        self._class_label.setGraphicsEffect(shadow)
+        self.center_layout.addWidget(self._class_label,0,0,QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
         self.actions_layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         self.actions_layout.setContentsMargins(0,5,0,0)
-        self._ds_dao =  DatasetDao()
-        self._hub_dao = HubDao()
-        self._labels_dao = LabelDao()
-        self._annot_dao = AnnotaDao()
-        self._thread_pool=QThreadPool()
-        self._loading_dialog=QLoadingDialog()
-        self._source = None
-        self._image = None
         self.images_list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection )
-        #self.images_list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
         self.images_list_widget.currentItemChanged.connect(self.image_list_sel_changed_slot)
         self.images_list_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.images_list_widget.customContextMenuRequested.connect(self.image_list_context_menu)
+        self.images_list_widget.setCursor(QtCore.Qt.PointingHandCursor)
+
 
         self.treeview_models=ModelsTreeview()
         self.treeview_models.setColumnWidth(0,300)
@@ -94,201 +100,296 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.treeview_labels.action_click.connect(self.trv_labels_action_click_slot)
         self.tree_view_labels_layout.addWidget(self.treeview_labels)
         self.treeview_labels.selectionModel().selectionChanged.connect(self.default_label_changed_slot)
-        #window = GUIUtilities.findMainWindow()
-        #window.keyPressed.connect(self.window_keyPressEvent)
-        self.create_actions_bar()
 
-    def image_list_context_menu(self, pos: QPoint):
-        menu=QMenu()
-        result=self._labels_dao.fetch_all(self.source.dataset)
-        if len(result) > 0:
-            labels_menu=menu.addMenu("labels")
-            for vo in result:
-                action=labels_menu.addAction(vo.name)
-                action.setData(vo)
-        action=menu.exec_(QCursor.pos())
-        if action and isinstance(action.data(),LabelVO):
-            label=action.data()
-            self.change_image_labels(label)
+        #image adjustment controls
+        img_adjust_controls_layout = QFormLayout()
+        self.img_adjust_page.setLayout(img_adjust_controls_layout)
+        self._brightness_slider = DoubleSlider()
+        self._brightness_slider.setMinimum(0.0)
+        self._brightness_slider.setMaximum(100.0)
+        self._brightness_slider.setSingleStep(0.5)
+        self._brightness_slider.setValue(self.image_viewer.img_brightness)
+        self._brightness_slider.setOrientation(QtCore.Qt.Horizontal)
 
-    def change_image_labels(self, label: LabelVO):
-        items = self.images_list_widget.selectedItems()
-        selected_images = []
-        for item in items:
-            vo = item.tag
-            selected_images.append(vo)
+        self._contrast_slider=DoubleSlider()
+        self._contrast_slider.setMinimum(1.0)
+        self._contrast_slider.setMaximum(3.0)
+        self._contrast_slider.setSingleStep(0.1)
+        self._contrast_slider.setValue(self.image_viewer.img_contrast)
+        self._contrast_slider.setOrientation(QtCore.Qt.Horizontal)
 
+        self._gamma_slider=DoubleSlider()
+        self._gamma_slider.setMinimum(1.0)
+        self._gamma_slider.setMaximum(5.0)
+        self._gamma_slider.setSingleStep(0.1)
+        self._gamma_slider.setValue(self.image_viewer.img_gamma)
+        self._gamma_slider.setOrientation(QtCore.Qt.Horizontal)
+        self._number_of_clusters_spin = QSpinBox()
+        self._number_of_clusters_spin.setMinimum(2)
+        self._number_of_clusters_spin.setValue(5)
+
+        self._contrast_slider.doubleValueChanged.connect(self._update_contrast_slot)
+        self._brightness_slider.doubleValueChanged.connect(self._update_brightness_slot)
+        self._gamma_slider.doubleValueChanged.connect(self._update_gamma_slot)
+
+        img_adjust_controls_layout.addRow(QLabel("Brightness:"), self._brightness_slider)
+        img_adjust_controls_layout.addRow(QLabel("Contrast:"), self._contrast_slider)
+        img_adjust_controls_layout.addRow(QLabel("Gamma:"),self._gamma_slider)
+        img_adjust_controls_layout.addRow(QLabel("Clusters:"),self._number_of_clusters_spin)
+
+        self.img_adjust_page.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.img_adjust_page.customContextMenuRequested.connect(self._image_processing_tools_ctx_menu)
+
+        self._ds_dao=DatasetDao()
+        self._hub_dao=HubDao()
+        self._labels_dao=LabelDao()
+        self._ann_dao=AnnotaDao()
+        self._thread_pool=QThreadPool()
+        self._loading_dialog=QLoadingDialog()
+        self._tag=None
+        self._curr_channel=0
+        self._channels=[]
+        self._toolbox = []
+        self.build_toolbox()
+
+
+    @property
+    def image(self):
+        return self.image_viewer.image
+
+    @image.setter
+    def image(self,value):
+        self.image_viewer.image = value
+
+    @property
+    def tag(self):
+        return self._tag
+
+    @tag.setter
+    def tag(self,value):
+        self._tag=value
+        if self._tag:
+            dataset_id = self._tag.dataset
+            self.image_viewer.dataset = dataset_id
+
+    @property
+    def channels(self):
+        return self._channels
+
+    @property
+    def curr_channel(self):
+        return self._curr_channel
+
+    @curr_channel.setter
+    def curr_channel(self,value):
+        self._curr_channel=value
+
+    def build_toolbox(self):
+        icon_size=QSize(28,28)
+        self._toolbox = [
+            ImageButton(icon=GUIUtilities.get_icon("polygon.png"),size=icon_size, tag="polygon"),
+            ImageButton(icon=GUIUtilities.get_icon("square.png"),size=icon_size, tag="box"),
+            ImageButton(icon=GUIUtilities.get_icon("circle.png"),size=icon_size, tag="ellipse"),
+            ImageButton(icon=GUIUtilities.get_icon("highlighter.png"),size=icon_size, tag="free"),
+            ImageButton(icon=GUIUtilities.get_icon("robotic-hand.png"),size=icon_size, tag="points"),
+            ImageButton(icon=GUIUtilities.get_icon("cursor.png"),size=icon_size, tag="pointer"),
+            ImageButton(icon=GUIUtilities.get_icon("save-icon.png"),size=icon_size, tag="save"),
+            ImageButton(icon=GUIUtilities.get_icon("clean.png"),size=icon_size, tag="clean")]
+        for button in self._toolbox:
+            self.actions_layout.addWidget(button)
+            self.actions_layout.addWidget(SeparatorWidget())
+            button.clicked.connect(self._action_toolbox_clicked_slot)
+
+    def _action_toolbox_clicked_slot(self):
+        button : ImageButton = self.sender()
+        action_tag = button.tag
+        tools_dict = {
+            "polygon": SELECTION_TOOL.POLYGON,
+            "box": SELECTION_TOOL.BOX,
+            "ellipse": SELECTION_TOOL.ELLIPSE,
+            "free": SELECTION_TOOL.FREE,
+            "points": SELECTION_TOOL.EXTREME_POINTS,
+            "pointer": SELECTION_TOOL.POINTER
+        }
+        if action_tag in tools_dict:
+            self.image_viewer.current_tool=tools_dict[action_tag]
+        else:
+            if action_tag == "save":
+                @gui_exception
+                def done_work(result):
+                    _, err = result
+                    if err:
+                        raise err
+                    GUIUtilities.show_info_message("Annotations saved successfully","Information")
+                self.save_annotations(done_work)
+            elif action_tag == "clean":
+                self.image_viewer.remove_annotations()
+
+    @gui_exception
+    def bind(self):
         @work_exception
         def do_work():
-            self._ds_dao.tag_entries(selected_images, label)
-            return 1,None
+            return dask.compute(*[
+                self.load_images(),
+                self.load_models(),
+                self.load_labels()
+            ]), None
 
         @gui_exception
-        def done_work(result):
-            status, err = result
-            if err:
-                raise err
+        def done_work(args):
+            result,error=args
+            if result:
+                images, models, labels = result
+                if models:
+                    for model in models:
+                        self.treeview_models.add_node(model)
+                if labels:
+                    for entry in labels:
+                        self.treeview_labels.add_row(entry)
+                selected_image=None
+                icon = GUIUtilities.get_icon("image.png")
+                for img in images:
+                    if os.path.isfile(img.file_path):
+                        item=CustomListWidgetItem(img.file_path, tag=img)
+                        item.setIcon(icon)
+                        self.images_list_widget.addItem(item)
+                        if img.file_path == self.tag.file_path:
+                            selected_image=item
+                    self.images_list_widget.setCurrentItem(selected_image)
 
         worker = Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
 
+    @dask.delayed
+    def load_images(self) -> [DatasetEntryVO]:
+        dataset_id = self.tag.dataset
+        return self._ds_dao.fetch_entries(dataset_id)
+
+    @dask.delayed
+    def load_models(self) -> [HubVO]:
+        return self._hub_dao.fetch_all()
+
+    @dask.delayed
+    def load_labels(self):
+        dataset_id=self.tag.dataset
+        return self._labels_dao.fetch_all(dataset_id)
+
+    @gui_exception
+    def image_list_sel_changed_slot(self,curr: CustomListWidgetItem,prev: CustomListWidgetItem):
+        self.image, self.tag  = cv2.imread(curr.tag.file_path, cv2.IMREAD_COLOR), curr.tag
+        self.load_image()
+
+    @gui_exception
+    def keyPressEvent(self,event: QtGui.QKeyEvent) -> None:
+        row=self.images_list_widget.currentRow()
+        last_index=self.images_list_widget.count()-1
+        if event.key() == QtCore.Qt.Key_A:
+            @gui_exception
+            def done_work(result):
+                if row > 0:
+                    self.images_list_widget.setCurrentRow(row-1)
+                else:
+                    self.images_list_widget.setCurrentRow(last_index)
+            self.save_annotations(done_work)
+        elif event.key() == QtCore.Qt.Key_D:
+            @gui_exception
+            def done_work(result):
+                if row < last_index:
+                    self.images_list_widget.setCurrentRow(row+1)
+                else:
+                    self.images_list_widget.setCurrentRow(0)
+            self.save_annotations(done_work)
+        super(ImageViewerWidget, self).keyPressEvent(event)
+
+    def _update_contrast_slot(self, val):
+        self.image_viewer.img_contrast=val
+        self.image_viewer.update_viewer()
+
+    def _update_gamma_slot(self, val):
+        self.image_viewer.img_gamma=val
+        self.image_viewer.update_viewer()
+
+    def _update_brightness_slot(self, val):
+        self.image_viewer.img_brightness = val
+        self.image_viewer.update_viewer()
+
+    def _reset_sliders(self):
+        self._gamma_slider.setValue(1.0)
+        self._brightness_slider.setValue(50.0)
+        self._contrast_slider.setValue(1.0)
+
+    @gui_exception
+    def _image_processing_tools_ctx_menu(self, pos: QPoint):
+        menu=QMenu(self)
+        action1 = QAction("Reset Image")
+        action1.setData("reset")
+        action2=QAction("Equalize Histogram")
+        action2.setData("equalize_histo")
+        action3=QAction("Correct Lightness")
+        action3.setData("correct_l")
+        action4=QAction("Cluster Image")
+        action4.setData("clustering")
+        menu.addActions([action1, action2, action3, action4])
+        action=menu.exec_(self.img_adjust_page.mapToGlobal(pos))
+        if action:
+            self._process_image_adjust_oper(action)
+
+    def _process_image_adjust_oper(self, action: QAction):
+        curr_action = action.data()
+        @work_exception
+        def do_work():
+            if curr_action == "reset":
+                self.image_viewer.reset_viewer()
+            elif curr_action == "equalize_histo":
+                self.image_viewer.equalize_histogram()
+            elif curr_action == "correct_l":
+                self.image_viewer.correct_lightness()
+            elif curr_action == "clustering":
+                self.image_viewer.kmeans(k= self._number_of_clusters_spin.value())
+            return None, None
+
+        @gui_exception
+        def done_work(result):
+            out, err = result
+            if err:
+                return
+            self._loading_dialog.hide()
+            self.image_viewer.update_viewer()
+
+        self._loading_dialog.show()
+        worker = Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)
 
     def default_label_changed_slot(self, selection: QItemSelection):
         selected_rows =self.treeview_labels.selectionModel().selectedRows(2)
         if len(selected_rows) > 0:
             index: QModelIndex = selected_rows[0]
             current_label: LabelVO=self.treeview_labels.model().data(index)
-            self.viewer.current_label = current_label
-
-    def image_list_sel_changed_slot(self,curr: CustomListWidgetItem,prev: CustomListWidgetItem):
-        if curr:
-            self.source = curr.tag
-            self.load_image()
-
-    @property
-    def image(self):
-        return self._image
-
-    @property
-    def source(self)-> DatasetEntryVO:
-        return self._source
-
-    @source.setter
-    def source(self, value):
-        if not isinstance(value, DatasetEntryVO):
-            raise Exception("Invalid source")
-        self._source= value
-        image_path = self._source.file_path
-        self._image=Image.open(image_path)
-        self.viewer.pixmap=QPixmap(image_path)
-
+            self.image_viewer.current_label = current_label
 
     @gui_exception
-    def load_images(self):
-        @work_exception
-        def do_work():
-            entries=self._ds_dao.fetch_entries(self.source.dataset)
-            return entries,None
-
-        @gui_exception
-        def done_work(result):
-            data,error=result
-            selected_item = None
-            for vo in data:
-                item = CustomListWidgetItem(vo.file_path)
-                item.setIcon(GUIUtilities.get_icon("image.png"))
-                item.tag = vo
-                if vo.file_path == self.source.file_path:
-                    selected_item = item
-                self.images_list_widget.addItem(item)
-                self.images_list_widget.setCursor(QtCore.Qt.PointingHandCursor)
-                self.images_list_widget.setCurrentItem(selected_item)
-
-        worker=Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)
-
+    def extreme_points_selection_done_slot(self, points: []):
+        self.predict_annotations_using_extr_points(points)
 
     @gui_exception
-    def load_models(self):
-        @work_exception
-        def do_work():
-            results = self._hub_dao.fetch_all()
-            return results, None
-
-        @gui_exception
-        def done_work(result):
-            result, error = result
-            if result:
-                for model in result:
-                    self.treeview_models.add_node(model)
-        worker=Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)
-
-    @gui_exception
-    def load_labels(self):
-        @work_exception
-        def do_work():
-            results = self._labels_dao.fetch_all(self.source.dataset)
-            return results, None
-
-        @gui_exception
-        def done_work(result):
-            result, error = result
-            if error is None:
-                for entry in result:
-                    self.treeview_labels.add_row(entry)
-        worker=Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)
-
-    @gui_exception
-    def load_image_annotations(self):
-        @work_exception
-        def do_work():
-            results=self._annot_dao.fetch_all(self.source.id)
-            return results,None
-
-        @gui_exception
-        def done_work(result):
-            result,error=result
-            if error:
-                raise error
-            img_bbox: QRectF=self.viewer.pixmap.sceneBoundingRect()
-            offset=QPointF(img_bbox.width()/2,img_bbox.height()/2)
-            for entry in result:
-                try:
-                    vo: AnnotaVO=entry
-                    points=map(float,vo.points.split(","))
-                    points=list(more_itertools.chunked(points,2))
-                    if vo.kind == "box" or vo.kind == "ellipse":
-                        x=points[0][0]-offset.x()
-                        y=points[0][1]-offset.y()
-                        w=math.fabs(points[0][0]-points[1][0])
-                        h=math.fabs(points[0][1]-points[1][1])
-                        roi: QRectF=QRectF(x,y,w,h)
-                        if vo.kind == "box":
-                            item=EditableBox(roi)
-                        else:
-                            item=EditableEllipse()
-                        item.setRect(roi)
-                        item.label=vo.label
-                        self.viewer.scene().addItem(item)
-                    elif vo.kind == "polygon":
-                        item=EditablePolygon()
-                        item.label=vo.label
-                        self.viewer.scene().addItem(item)
-                        for p in points:
-                            item.addPoint(QPoint(p[0]-offset.x(),p[1]-offset.y()))
-                except Exception as ex:
-                    GUIUtilities.show_error_message("Error loading the annotations: {}".format(ex), "Error")
-        worker=Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)
-
-    @gui_exception
-    def load_image_label(self):
-        @work_exception
-        def do_work():
-            label=self._annot_dao.get_label(self.source.id)
-            return label,None
-
-        @gui_exception
-        def done_work(result):
-            label_name,error=result
-            if error:
-                raise error
-            if label_name:
-                self._label.setVisible(True)
-                self._label.setText(label_name)
-            else:
-                self._label.setVisible(False)
-                self._label.setText("")
-        worker=Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)
+    def trv_labels_action_click_slot(self,action: QAction):
+        model  = self.treeview_labels.model()
+        if action.text() == self.treeview_labels.CTX_MENU_ADD_LABEL:
+            form=NewLabelForm()
+            if form.exec_() == QDialog.Accepted:
+                label_vo: LabelVO=form.result
+                label_vo.dataset=self.tag.dataset
+                label_vo = self._labels_dao.save(label_vo)
+                self.treeview_labels.add_row(label_vo)
+        elif action.text() == self.treeview_labels.CTX_MENU_DELETE_LABEL:
+            index : QModelIndex = action.data()
+            if index:
+                label_vo=model.index(index.row(),2).data()
+                self._labels_dao.delete(label_vo.id)
+                self.image_viewer.remove_annotations_by_label(label_vo.name)
+                model.removeRow(index.row())
 
     @gui_exception
     def add_repository(self):
@@ -310,234 +411,197 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         form=NewRepoForm()
         if form.exec_() == QDialog.Accepted:
             repository=form.result
-            worker=Worker(do_work, repository)
+            worker=Worker(do_work,repository)
             worker.signals.result.connect(done_work)
             self._thread_pool.start(worker)
             self._loading_dialog.exec_()
 
-    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-        try:
-            self.viewer.vline.hide()
-            self.viewer.hline.hide()
-            row = self.images_list_widget.currentRow()
-            last_index = self.images_list_widget.count() - 1
-            if event.key() == QtCore.Qt.Key_A:
-                self.save_annotations()
-                if row > 0:
-                    self.images_list_widget.setCurrentRow(row-1)
-                else:
-                    self.images_list_widget.setCurrentRow(last_index)
-            if event.key() == QtCore.Qt.Key_D:
-                self.save_annotations()
-                if row < last_index:
-                    self.images_list_widget.setCurrentRow(row+1)
-                else:
-                    self.images_list_widget.setCurrentRow(0)
-            if event.key() == QtCore.Qt.Key_W:
-                self.viewer.selection_mode=SELECTION_MODE.POLYGON
-            if event.key() == QtCore.Qt.Key_S:
-                self.viewer.selection_mode=SELECTION_MODE.BOX
-            super(ImageViewerWidget,self).keyPressEvent(event)
-        except Exception as ex:
-            GUIUtilities.show_error_message(str(ex), "Error")
-
     @gui_exception
-    def trv_models_action_click_slot(self, action:  QAction):
+    def trv_models_action_click_slot(self,action: QAction):
         if action.text() == self.treeview_models.CTX_MENU_NEW_DATASET_ACTION:
             self.add_repository()
         elif action.text() == self.treeview_models.CTX_MENU_AUTO_LABEL_ACTION:
-            current_node = action.data()  # model name
-            parent_node = current_node.parent  # repo
-            repo, model = parent_node.get_data(0),current_node.get_data(0)
-            self.autolabel(repo, model)
+            current_node=action.data()  # model name
+            parent_node=current_node.parent  # repo
+            repo,model=parent_node.get_data(0),current_node.get_data(0)
+            self.predict_annotations_using_pytorch_vision_model(repo, model)
 
-    @gui_exception
-    def trv_labels_action_click_slot(self,action: QAction):
-        model  = self.treeview_labels.model()
-        if action.text() == self.treeview_labels.CTX_MENU_ADD_LABEL:
-            form=NewLabelForm()
-            if form.exec_() == QDialog.Accepted:
-                label_vo: LabelVO=form.result
-                label_vo.dataset=self.source.dataset
-                label_vo = self._labels_dao.save(label_vo)
-                self.treeview_labels.add_row(label_vo)
-        elif action.text() == self.treeview_labels.CTX_MENU_DELETE_LABEL:
-            index : QModelIndex = action.data()
-            if index:
-                label_vo=model.index(index.row(),2).data()
-                self._labels_dao.delete(label_vo.id)
-                self.viewer.remove_annotations_by_label(label_vo.name)
-                model.removeRow(index.row())
+    def image_list_context_menu(self,pos: QPoint):
+        menu=QMenu()
+        result=self._labels_dao.fetch_all(self.tag.dataset)
+        if len(result) > 0:
+            labels_menu=menu.addMenu("labels")
+            for vo in result:
+                action=labels_menu.addAction(vo.name)
+                action.setData(vo)
+        action=menu.exec_(QCursor.pos())
+        if action and isinstance(action.data(),LabelVO):
+            label=action.data()
+            self.change_image_labels(label)
 
-    def autolabel(self, repo, model_name):
+    def change_image_labels(self,label: LabelVO):
+        items=self.images_list_widget.selectedItems()
+        selected_images=[]
+        for item in items:
+            vo=item.tag
+            selected_images.append(vo)
+
+        @work_exception
         def do_work():
-            try:
-                from PIL import Image
-                from torchvision import transforms
-                import torch
-                gpu_id=0
-                device=torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
-                model=torch.hub.load(repo,model_name,pretrained=True)
-                model.eval()
-                input_image=Image.open(self.source.file_path)
-                preprocess=transforms.Compose([
-                    transforms.Resize(480),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.485,0.456,0.406],std=[0.229,0.224,0.225]),
-                ])
-                input_tensor=preprocess(input_image)
-                input_batch=input_tensor.unsqueeze(0)  # create a mini-batch as expected by the model
-                # # move the param and model to GPU for speed if available
-                if torch.cuda.is_available():
-                    input_batch=input_batch.to(device)
-                    model.to(device)
-                with torch.no_grad():
-                    output=model(input_batch)['out'][0]
-                output_predictions=output.argmax(0)
-                # create a color pallette, selecting a color for each class
-                palette=torch.tensor([2 ** 25-1,2 ** 15-1,2 ** 21-1])
-                colors=torch.as_tensor([i for i in range(21)])[:,None]*palette
-                colors=(colors%255).numpy().astype("uint8")
-                # plot the semantic segmentation predictions of 21 classes in each color
-                predictions_array: np.ndarray=output_predictions.byte().cpu().numpy()
-                predictions_image=Image.fromarray(predictions_array).resize(input_image.size)
-                predictions_image.putpalette(colors)
-                labels_mask=np.asarray(predictions_image)
-                classes=list(filter(lambda x: x != 0,np.unique(labels_mask).tolist()))
-                classes_map={c: [] for c in classes}
-                for c in classes:
-                    class_mask=np.zeros(labels_mask.shape,dtype=np.uint8)
-                    class_mask[np.where(labels_mask == c)]=255
-                    contour_list=cv2.findContours(class_mask.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-                    contour_list=imutils.grab_contours(contour_list)
-                    for contour in contour_list:
-                        points=np.vstack(contour).squeeze().tolist()
-                        classes_map[c].append(points)
-                return classes_map,None
-            except Exception as ex:
-                return None,ex
+            self._ds_dao.tag_entries(selected_images,label)
+            return 1,None
 
+        @gui_exception
         def done_work(result):
-            try:
-                self._loading_dialog.close()
-                classes_map,err=result
-                if err:
-                    return
-                for class_idx,contours in classes_map.items():
-                    if len(contours) > 0:
-                        for c in contours:
-                            points=[]
-                            for i in range(0,len(c),10):
-                                points.append(c[i])
-                            if len(points) > 5:
-                                polygon=EditablePolygon()
-                                self.viewer._scene.addItem(polygon)
-                                bbox: QRectF=self.viewer.pixmap.boundingRect()
-                                offset=QPointF(bbox.width()/2,bbox.height()/2)
-                                for point in points:
-                                    if isinstance(point, list) and len(point) == 2:
-                                        polygon.addPoint(QPoint(point[0]-offset.x(),point[1]-offset.y()))
-            except Exception as ex:
-                print(ex)
+            status,err=result
+            if err:
+                raise err
 
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
-        self._loading_dialog.exec_()
 
-    def create_actions_bar(self):
-        icon_size = QSize(28,28)
+    @dask.delayed
+    def load_image_label(self):
+        return self._ann_dao.get_label(self.tag.id)
 
-        self.btn_enable_polygon_selection=ImageButton(icon=GUIUtilities.get_icon("polygon.png"),size=icon_size)
-        self.btn_enable_rectangle_selection=ImageButton(icon=GUIUtilities.get_icon("square.png"),size=icon_size)
-        self.btn_enable_circle_selection = ImageButton(icon=GUIUtilities.get_icon("circle.png"), size=icon_size)
-        self.btn_enable_free_selection=ImageButton(icon=GUIUtilities.get_icon("highlighter.png"),size=icon_size)
-        self.btn_enable_none_selection=ImageButton(icon=GUIUtilities.get_icon("cursor.png"),size=icon_size)
-        self.btn_save_annotations = ImageButton(icon=GUIUtilities.get_icon("save-icon.png"),size=icon_size)
-        self.btn_clear_annotations=ImageButton(icon=GUIUtilities.get_icon("clean.png"),size=icon_size)
-        self.btn_supervised_annotation_tools = ImageButton(icon=GUIUtilities.get_icon("robotic-hand.png"), size=icon_size)
+    @dask.delayed
+    def load_image_annotations(self):
+        return self._ann_dao.fetch_all(self.tag.id)
 
-        self.actions_layout.addWidget(self.btn_enable_rectangle_selection)
-        self.actions_layout.addWidget(self.btn_enable_polygon_selection)
-        self.actions_layout.addWidget(self.btn_enable_circle_selection)
-        self.actions_layout.addWidget(self.btn_enable_free_selection)
-        self.actions_layout.addWidget(self.btn_supervised_annotation_tools)
-        self.actions_layout.addWidget(self.btn_enable_none_selection)
-        self.actions_layout.addWidget(self.btn_clear_annotations)
-        self.actions_layout.addWidget(self.btn_save_annotations)
+    def load_image(self):
+        @work_exception
+        def do_work():
+            return dask.compute(*[
+                self.load_image_label(),
+                self.load_image_annotations()
+            ]),None
 
-        self.btn_save_annotations.clicked.connect(self.btn_save_annotations_clicked_slot)
-        self.btn_enable_polygon_selection.clicked.connect(self.btn_enable_polygon_selection_clicked_slot)
-        self.btn_enable_rectangle_selection.clicked.connect(self.btn_enable_rectangle_selection_clicked_slot)
-        self.btn_enable_free_selection.clicked.connect(self.btn_enable_free_selection_clicked_slot)
-        self.btn_enable_none_selection.clicked.connect(self.btn_enable_none_selection_clicked_slot)
-        self.btn_enable_circle_selection.clicked.connect(self.btn_enable_circle_selection_clicked_slot)
-        self.btn_clear_annotations.clicked.connect(self.btn_clear_annotations_clicked_slot)
-        self.btn_supervised_annotation_tools.clicked.connect(self.btn_supervised_annotation_tools_clicked_clot)
+        @gui_exception
+        def done_work(args):
+            result,error=args
+            if result:
+                label, annotations=result
+                if label:
+                    self._class_label.setVisible(True)
+                    self._class_label.setText(label)
+                else:
+                    self._class_label.setVisible(False)
+                    self._class_label.setText("")
 
-    def btn_supervised_annotation_tools_clicked_clot(self):
-        menu=QMenu()
-        menu.setCursor(QtCore.Qt.PointingHandCursor)
-        ex_points_action = QAction("Extreme Points")
-        ex_points_action.setIcon(GUIUtilities.get_icon("points.png"))
-        menu.addAction(ex_points_action)
-        curr_action=menu.exec_(QCursor.pos())
-        if curr_action == ex_points_action:
-            self.viewer.selection_mode = SELECTION_MODE.EXTREME_POINTS
+                if annotations:
+                    img_bbox: QRectF=self.image_viewer.pixmap.sceneBoundingRect()
+                    offset=QPointF(img_bbox.width()/2,img_bbox.height()/2)
+                    for entry in annotations:
+                        try:
+                            vo: AnnotaVO=entry
+                            points=map(float,vo.points.split(","))
+                            points=list(more_itertools.chunked(points,2))
+                            if vo.kind == "box" or vo.kind == "ellipse":
+                                x=points[0][0]-offset.x()
+                                y=points[0][1]-offset.y()
+                                w=math.fabs(points[0][0]-points[1][0])
+                                h=math.fabs(points[0][1]-points[1][1])
+                                roi: QRectF=QRectF(x,y,w,h)
+                                if vo.kind == "box":
+                                    item=EditableBox(roi)
+                                else:
+                                    item=EditableEllipse()
+                                item.setRect(roi)
+                                item.label=vo.label
+                                self.image_viewer.scene().addItem(item)
+                            elif vo.kind == "polygon":
+                                item=EditablePolygon()
+                                item.label=vo.label
+                                self.image_viewer.scene().addItem(item)
+                                for p in points:
+                                    item.addPoint(QPoint(p[0]-offset.x(),p[1]-offset.y()))
+                        except Exception as ex:
+                            GUIUtilities.show_error_message("Error loading the annotations: {}".format(ex),"Error")
 
+        self.image_viewer.remove_annotations()
+        worker=Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)
 
-    def btn_clear_annotations_clicked_slot(self):
-        self.viewer.remove_annotations()
-
-    def btn_enable_polygon_selection_clicked_slot(self):
-        self.viewer.selection_mode=SELECTION_MODE.POLYGON
-
-    def btn_enable_rectangle_selection_clicked_slot(self):
-        self.viewer.selection_mode=SELECTION_MODE.BOX
-
-    def btn_enable_circle_selection_clicked_slot(self):
-        self.viewer.selection_mode=SELECTION_MODE.ELLIPSE
-
-    def btn_enable_none_selection_clicked_slot(self):
-        self.viewer.selection_mode=SELECTION_MODE.NONE
-
-    def btn_enable_free_selection_clicked_slot(self):
-        self.viewer.selection_mode=SELECTION_MODE.FREE
-
-    def save_annotations(self):
-        scene: QGraphicsScene=self.viewer.scene()
+    @gui_exception
+    def save_annotations(self, done_work_callback):
+        scene: QGraphicsScene=self.image_viewer.scene()
         annotations=[]
         for item in scene.items():
-            image_rect : QRectF=self.viewer.pixmap.sceneBoundingRect()
-            image_offset = QPointF(image_rect .width()/2,image_rect .height()/2)
+            image_rect: QRectF=self.image_viewer.pixmap.sceneBoundingRect()
+            image_offset=QPointF(image_rect.width()/2,image_rect.height()/2)
             if isinstance(item,EditableItem):
                 a=AnnotaVO()
                 a.label=item.label.id if item.label else None
-                a.entry=self.source.id
+                a.entry=self.tag.id
                 a.kind=item.shape_type
                 a.points=item.coordinates(image_offset)
                 annotations.append(a)
-        self._annot_dao.save(self.source.id, annotations)
+        @work_exception
+        def do_work():
+            self._ann_dao.save(self.tag.id,annotations)
+            return None, None
+        worker = Worker(do_work)
+        worker.signals.result.connect(done_work_callback)
+        self._thread_pool.start(worker)
 
-    @gui_exception
-    def btn_save_annotations_clicked_slot(self,*args, **kwargs):
-        self.save_annotations()
-        GUIUtilities.show_info_message("Annotations saved successfully", "Information")
+    @staticmethod
+    def invoke_tf_hub_model(image_path, repo,model_name):
+        from PIL import Image
+        from torchvision import transforms
+        import torch
+        import inspect
+        gpu_id=0
+        device=torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
+        model=torch.hub.load(repo,model_name,pretrained=True)
+        model.eval()
+        input_image=Image.open(image_path)
+        preprocess=transforms.Compose([
+            transforms.Resize(480),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485,0.456,0.406],std=[0.229,0.224,0.225]),
+        ])
+        input_tensor=preprocess(input_image)
+        input_batch=input_tensor.unsqueeze(0)  # create a mini-batch as expected by the model
+        # # move the param and model to GPU for speed if available
+        if torch.cuda.is_available():
+            input_batch=input_batch.to(device)
+            model.to(device)
+        with torch.no_grad():
+            output=model(input_batch)
+        if isinstance(output, OrderedDict):
+            output = output["out"][0]
+            predictions_tensor =output.argmax(0)
+            # move predictions to the cpu and convert into a numpy array
+            predictions_arr: np.ndarray=predictions_tensor.byte().cpu().numpy()
+            classes_ids = np.unique(predictions_arr).tolist()
+            classes_idx = list(filter(lambda x: x != 0, classes_ids)) ## ignore
+            predictions_arr=Image.fromarray(predictions_arr).resize(input_image.size)
+            predictions_arr=np.asarray(predictions_arr)
+            # 0 value
+            predicted_mask={c: [] for c in classes_idx}
 
-    def _scene_item_added(self, item: QGraphicsItem):
-        item.tag = self.source
+            for idx in classes_idx:
+                class_mask=np.zeros(predictions_arr.shape,dtype=np.uint8)
+                class_mask[np.where(predictions_arr == idx)]=255
+                contour_list=cv2.findContours(class_mask.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+                contour_list=imutils.grab_contours(contour_list)
+                for contour in contour_list:
+                    points=np.vstack(contour).squeeze().tolist()
+                    predicted_mask[idx].append(points)
+                return "mask", predicted_mask
+        else:
+            class_map=json.load(open("./data/imagenet_class_index.json"))
+            max, argmax = output.data.squeeze().max(0)
+            class_id = argmax.item()
+            predicted_label = class_map[str(class_id)]
+            return  "label",predicted_label
 
-    def bind(self):
-        self.load_images()
-        self.load_models()
-        self.load_labels()
+        return None
 
-    def load_image(self):
-        self.load_image_annotations()
-        self.load_image_label()
-
-    @gui_exception
-    def extreme_points_selection_done_slot(self, points):
+    @staticmethod
+    def invoke_dextr_pascal_model(image_path,  points):
         import torch
         from collections import OrderedDict
         from PIL import Image
@@ -549,89 +613,133 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         pad=50
         thres=0.8
         gpu_id=0
+        device=torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
+        #  Create the network and load the weights
+        model = resnet.resnet101(1,nInputChannels=4,classifier='psp')
+        model_path=os.path.abspath("./models/{}.pth".format(modelName))
+        state_dict_checkpoint=torch.load(model_path,map_location=lambda storage,loc: storage)
+        if 'module.' in list(state_dict_checkpoint.keys())[0]:
+            new_state_dict=OrderedDict()
+            # remove `module.` from multi-gpu training
+            for k,v in state_dict_checkpoint.items():
+                name=k[7:]
+                new_state_dict[name]=v
+        else:
+            new_state_dict=state_dict_checkpoint
+        model.load_state_dict(new_state_dict)
+        model.eval()
+        model.to(device)
+        #  Read image and click the points
+        image=np.array(Image.open(image_path))
+        extreme_points_ori=np.asarray(points).astype(np.int)
+        with torch.no_grad():
+            #  Crop image to the bounding box from the extreme points and resize
+            bbox=helpers.get_bbox(image,points=extreme_points_ori,pad=pad,zero_pad=True)
+            crop_image=helpers.crop_from_bbox(image,bbox,zero_pad=True)
+            resize_image=helpers.fixed_resize(crop_image,(512,512)).astype(np.float32)
 
+            #  Generate extreme point heat map normalized to image values
+            extreme_points=extreme_points_ori-[np.min(extreme_points_ori[:,0]),np.min(extreme_points_ori[:,1])]+[pad,
+                                                                                                                 pad]
+            extreme_points=(512*extreme_points*[1/crop_image.shape[1],1/crop_image.shape[0]]).astype(np.int)
+            extreme_heatmap=helpers.make_gt(resize_image,extreme_points,sigma=10)
+            extreme_heatmap=helpers.cstm_normalize(extreme_heatmap,255)
+
+            #  Concatenate inputs and convert to tensor
+            input_dextr=np.concatenate((resize_image,extreme_heatmap[:,:,np.newaxis]),axis=2)
+            inputs=torch.from_numpy(input_dextr.transpose((2,0,1))[np.newaxis,...])
+
+            # Run a forward pass
+            inputs=inputs.to(device)
+            outputs=model.forward(inputs)
+            outputs=upsample(outputs,size=(512,512),mode='bilinear',align_corners=True)
+            outputs=outputs.to(torch.device('cpu'))
+
+            pred=np.transpose(outputs.data.numpy()[0,...],(1,2,0))
+            pred=1/(1+np.exp(-pred))
+            pred=np.squeeze(pred)
+            result=helpers.crop2fullmask(pred,bbox,im_size=image.shape[:2],zero_pad=True,relax=pad) > thres
+            binary=np.zeros_like(result,dtype=np.uint8)
+            binary[result]=255
+            contour_list=cv2.findContours(binary.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+            contour_list=imutils.grab_contours(contour_list)
+            contours=[]
+            for contour in contour_list:
+                c_points=np.vstack(contour).squeeze().tolist()
+                contours.append(c_points)
+        return contours
+
+    @gui_exception
+    def predict_annotations_using_pytorch_thub_model(self, repo, model_name):
+        @work_exception
         def do_work():
-            device=torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
-            #  Create the network and load the weights
-            net=resnet.resnet101(1,nInputChannels=4,classifier='psp')
-            model_path = os.path.abspath("./models/{}.pth".format(modelName))
-            state_dict_checkpoint=torch.load(model_path, map_location=lambda storage,loc: storage)
+            pred_result = self.invoke_tf_hub_model(self.tag.file_path,  repo,model_name)
+            return pred_result, None
 
-            if 'module.' in list(state_dict_checkpoint.keys())[0]:
-                new_state_dict=OrderedDict()
-                for k,v in state_dict_checkpoint.items():
-                    name=k[7:]  # remove `module.` from multi-gpu training
-                    new_state_dict[name]=v
-            else:
-                new_state_dict=state_dict_checkpoint
-            net.load_state_dict(new_state_dict)
-            net.eval()
-            net.to(device)
+        @gui_exception
+        def done_work(result):
+            self._loading_dialog.hide()
+            pred_out,err=result
+            if err:
+                raise err
+            if pred_out:
+                pred_type, pred_res = pred_out
+                if pred_type == "mask":
+                    for class_idx,contours in pred_res.items():
+                        if len(contours) > 0:
+                            for c in contours:
+                                points=[]
+                                for i in range(0,len(c),10):
+                                    points.append(c[i])
+                                if len(points) > 5:
+                                    polygon=EditablePolygon()
+                                    polygon.tag = self.tag.dataset
+                                    self.image_viewer._scene.addItem(polygon)
+                                    bbox: QRectF=self.image_viewer.pixmap.boundingRect()
+                                    offset=QPointF(bbox.width()/2,bbox.height()/2)
+                                    for point in points:
+                                        if isinstance(point,list) and len(point) == 2:
+                                            polygon.addPoint(QPoint(point[0]-offset.x(),point[1]-offset.y()))
+                else:
+                    class_id, class_name = pred_res
+                    GUIUtilities.show_info_message("predicted label : `{}`".format(class_name), "prediction result")
+        self._loading_dialog.show()
+        worker = Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)
 
-            #  Read image and click the points
-            image=np.array(Image.open(self.source.file_path))
-            extreme_points_ori = np.asarray(points).astype(np.int)
-            with torch.no_grad():
-                #  Crop image to the bounding box from the extreme points and resize
-                bbox=helpers.get_bbox(image,points=extreme_points_ori,pad=pad,zero_pad=True)
-                crop_image=helpers.crop_from_bbox(image,bbox,zero_pad=True)
-                resize_image=helpers.fixed_resize(crop_image,(512,512)).astype(np.float32)
+    @gui_exception
+    def predict_annotations_using_extr_points(self, points):
+        pass
+        @work_exception
+        def do_work():
+            contours=self.invoke_dextr_pascal_model( self.tag.file_path,points)
+            return contours,None
 
-                #  Generate extreme point heat map normalized to image values
-                extreme_points=extreme_points_ori-[np.min(extreme_points_ori[:,0]),np.min(extreme_points_ori[:,1])]+[pad,pad]
-                extreme_points=(512*extreme_points*[1/crop_image.shape[1],1/crop_image.shape[0]]).astype(np.int)
-                extreme_heatmap=helpers.make_gt(resize_image,extreme_points,sigma=10)
-                extreme_heatmap=helpers.cstm_normalize(extreme_heatmap,255)
+        @gui_exception
+        def done_work(result):
+            self._loading_dialog.hide()
+            pred_out,err=result
+            if err:
+                raise err
+            if pred_out:
+                for c in pred_out:
+                    c_points=[]
+                    for i in range(0,len(c),10):
+                        c_points.append(c[i])
+                    if len(c_points) > 5:
+                        polygon=EditablePolygon()
+                        polygon.tag=self.tag.dataset
+                        self.image_viewer._scene.addItem(polygon)
+                        bbox: QRectF=self.image_viewer.pixmap.boundingRect()
+                        offset=QPointF(bbox.width()/2,bbox.height()/2)
+                        for point in c_points:
+                            polygon.addPoint(QPoint(point[0]-offset.x(),point[1]-offset.y()))
 
-                #  Concatenate inputs and convert to tensor
-                input_dextr=np.concatenate((resize_image,extreme_heatmap[:,:,np.newaxis]),axis=2)
-                inputs=torch.from_numpy(input_dextr.transpose((2,0,1))[np.newaxis,...])
-
-                # Run a forward pass
-                inputs=inputs.to(device)
-                outputs=net.forward(inputs)
-                outputs=upsample(outputs,size=(512,512),mode='bilinear',align_corners=True)
-                outputs=outputs.to(torch.device('cpu'))
-
-                pred=np.transpose(outputs.data.numpy()[0,...],(1,2,0))
-                pred=1/(1+np.exp(-pred))
-                pred=np.squeeze(pred)
-                result=helpers.crop2fullmask(pred,bbox,im_size=image.shape[:2],zero_pad=True,relax=pad) > thres
-                binary = np.zeros_like(result, dtype=np.uint8)
-                binary[result]=255
-                contour_list=cv2.findContours(binary.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-                contour_list=imutils.grab_contours(contour_list)
-                contours = []
-                for contour in contour_list:
-                    c_points=np.vstack(contour).squeeze().tolist()
-                    contours.append(c_points)
-            return contours
-
-        def done_work(contours):
-            try:
-                self._loading_dialog.close()
-                if contours:
-                    self.viewer.clear_extreme_points()
-                    for c in contours:
-                        c_points=[]
-                        for i in range(0,len(c),10):
-                            c_points.append(c[i])
-                        if len(c_points) > 5:
-                            polygon=EditablePolygon()
-                            self.viewer._scene.addItem(polygon)
-                            bbox: QRectF=self.viewer.pixmap.boundingRect()
-                            offset=QPointF(bbox.width()/2,bbox.height()/2)
-                            for point in c_points:
-                                polygon.addPoint(QPoint(point[0] - offset.x(),point[1] - offset.y()))
-            except Exception as ex:
-                print(ex)
-
+        self._loading_dialog.show()
         worker=Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
-        self._loading_dialog.exec_()
-
-
 
 
 

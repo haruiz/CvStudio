@@ -1,5 +1,7 @@
-*{
-    font-family: "Open Sans", Arial, Helvetica, Sans-Serif;
+
+* {
+    font-family: "Roboto";
+    font-size: 14px;
 }
 
 QToolTip {
@@ -7,18 +9,3 @@ QToolTip {
     border-radius: 40px;
     padding: 4px;
 }
-
-QPushButton#lateral_menu_button:hover {
-    background-color: ghostwhite;
-    border-style: outset;
-    border-width: 2px;
-    border-radius: 10px;
-    border-color: beige;
-    padding: 6px;
-}
-
-QFrame#top_bar {
-    background-color: gainsboro;
-    border: 1px solid gainsboro;
-}
-

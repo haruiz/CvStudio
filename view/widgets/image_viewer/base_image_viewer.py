@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'base_image_viewer.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.1
+# Created by: PyQt5 UI code generator 5.14.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -57,7 +57,12 @@ class Ui_Image_Viewer_Widget(object):
         self.horizontalLayout_2.addLayout(self.actions_layout)
         self.horizontalLayout_3.addWidget(self.frame_3)
         self.frame = QtWidgets.QFrame(self.frame_4)
-        self.frame.setMinimumSize(QtCore.QSize(0, 0))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(2)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.frame.sizePolicy().hasHeightForWidth())
+        self.frame.setSizePolicy(sizePolicy)
+        self.frame.setMinimumSize(QtCore.QSize(800, 0))
         self.frame.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
@@ -71,11 +76,11 @@ class Ui_Image_Viewer_Widget(object):
         self.horizontalLayout_3.addWidget(self.frame)
         self.frame_2 = QtWidgets.QFrame(self.splitter)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(2)
+        sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.frame_2.sizePolicy().hasHeightForWidth())
         self.frame_2.setSizePolicy(sizePolicy)
-        self.frame_2.setMinimumSize(QtCore.QSize(350, 0))
+        self.frame_2.setMinimumSize(QtCore.QSize(300, 0))
         self.frame_2.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
@@ -127,17 +132,12 @@ class Ui_Image_Viewer_Widget(object):
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.toolBox = QtWidgets.QToolBox(self.frame_6)
         self.toolBox.setObjectName("toolBox")
-        self.page_3 = QtWidgets.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 685, 296))
-        self.page_3.setObjectName("page_3")
-        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.page_3)
-        self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.tree_view_annot_layout = QtWidgets.QVBoxLayout()
-        self.tree_view_annot_layout.setObjectName("tree_view_annot_layout")
-        self.verticalLayout_8.addLayout(self.tree_view_annot_layout)
-        self.toolBox.addItem(self.page_3, "")
+        self.img_adjust_page = QtWidgets.QWidget()
+        self.img_adjust_page.setGeometry(QtCore.QRect(0, 0, 276, 296))
+        self.img_adjust_page.setObjectName("img_adjust_page")
+        self.toolBox.addItem(self.img_adjust_page, "")
         self.page_4 = QtWidgets.QWidget()
-        self.page_4.setGeometry(QtCore.QRect(0, 0, 685, 296))
+        self.page_4.setGeometry(QtCore.QRect(0, 0, 276, 296))
         self.page_4.setObjectName("page_4")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.page_4)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
@@ -159,5 +159,5 @@ class Ui_Image_Viewer_Widget(object):
         Image_Viewer_Widget.setWindowTitle(_translate("Image_Viewer_Widget", "Form"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("Image_Viewer_Widget", "Labels"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("Image_Viewer_Widget", "Hub"))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.page_3), _translate("Image_Viewer_Widget", "Annotations"))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.img_adjust_page), _translate("Image_Viewer_Widget", "Image Adjustment"))
         self.toolBox.setItemText(self.toolBox.indexOf(self.page_4), _translate("Image_Viewer_Widget", "Images"))

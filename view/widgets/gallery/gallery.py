@@ -10,7 +10,7 @@ from PyQt5 import QtGui,QtCore
 from PyQt5.QtCore import QObject,QSize,pyqtSignal,QThreadPool
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget,QGridLayout,QLabel,QLayoutItem,QVBoxLayout
-
+from hurry.filesize import size,alternative
 from util import GUIUtilities,MiscUtilities,Worker
 from view.widgets.image_button import ImageButton
 from view.widgets.loading_dialog import QLoadingDialog
@@ -150,6 +150,7 @@ class Gallery(QWidget,Ui_Gallery,QObject):
     def actions(self,value):
         self._actions=value
 
+
     @property
     def content_type(self):
         return self._content_type
@@ -288,38 +289,44 @@ class Gallery(QWidget,Ui_Gallery,QObject):
 
             def create_thumbnail(item):
                 file_path=item.file_path
-                image=cv2.imread(file_path)
-                h,w,_=np.shape(image)
-                if w > h:
-                    thumbnail_array=imutils.resize(image,width=150)
-                else:
-                    thumbnail_array=imutils.resize(image,height=150)
-                thumbnail_array=cv2.cvtColor(thumbnail_array,cv2.COLOR_BGR2RGB)
-                thumbnail=GUIUtilities.array_to_qimage(thumbnail_array)
-                thumbnail=QPixmap.fromImage(thumbnail)
-                del thumbnail_array
-                del image
-                return item,h,w,thumbnail
-
+                if os.path.isfile(file_path):
+                    image=cv2.imread(file_path)
+                    h,w,_=np.shape(image)
+                    if w > h:
+                        thumbnail_array=imutils.resize(image,width=150)
+                    else:
+                        thumbnail_array=imutils.resize(image,height=150)
+                    thumbnail_array=cv2.cvtColor(thumbnail_array,cv2.COLOR_BGR2RGB)
+                    thumbnail=GUIUtilities.array_to_qimage(thumbnail_array)
+                    thumbnail=QPixmap.fromImage(thumbnail)
+                    del thumbnail_array
+                    del image
+                    return item,h,w,thumbnail,os.path.getsize(file_path), False
+                thumbnail = GUIUtilities.get_image("placeholder.png")
+                thumbnail = thumbnail.scaledToHeight(100)
+                h, w = thumbnail.height(), thumbnail.width()
+                return item, h, w, thumbnail, 0, True
             delayed_tasks=[dask.delayed(create_thumbnail)(item) for item in items]
-            # images = dask.compute(*delayed_taks, scheduler="processes", num_workers=5)
             images=dask.compute(*delayed_tasks)
             return images
 
         def done_work(images):
             for img in images:
-                item,h,w,thumbnail=img
-                image_card=ImageCard()
-                image_card.tag=item
-                image_card.source=thumbnail
-                image_card.file_path=item.file_path
-                image_card.label.setText("({0}px / {1}px)".format(w,h))
-                image_card.setFixedHeight(240)
-                image_card.doubleClicked.connect(self.gallery_card_double_click)
-                image_card.add_buttons(self.actions)
-                if len(self.actions) > 0:
-                    image_card.actionClicked.connect(lambda name,item: self.cardActionClicked.emit(name,item))
-                self.center_layout.add_item(image_card)
+                if img:
+                    item,h,w,thumbnail,file_size, is_broken=img
+                    image_card=ImageCard()
+                    image_card.is_broken = is_broken
+                    image_card.tag=item
+                    image_card.source=thumbnail
+                    image_card.file_path=item.file_path
+                    image_size_str = size(file_size,system=alternative) if file_size > 0 else "0 MB"
+                    image_card.label.setText("\n ({0}px / {1}px) \n {2}".format(w,h, image_size_str))
+                    image_card.setFixedHeight(240)
+                    image_card.doubleClicked.connect(self.gallery_card_double_click)
+                    image_card.add_buttons(self.actions)
+                    if self.actions:
+                        image_card.actionClicked.connect(lambda name,item: self.cardActionClicked.emit(name,item))
+                    self.center_layout.add_item(image_card)
 
         def finished_work():
             self._loading_dialog.close()

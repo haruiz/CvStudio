@@ -49,7 +49,7 @@ class ImageDialog(QDialog):
         position.setX(position.x())
         position.setY(position.y())
         self.move(position)
-        #self.setWindowOpacity(0.9)
+        #self.setWindowOpacity(0.8)
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0,0,0,0)
         self.widget = QFrame()
@@ -57,10 +57,10 @@ class ImageDialog(QDialog):
             QFrame{
             border-style: outset;
             border-width: 1px;
-            /*border-radius: 10px;*/
-            border-color: #B94129;
+            border-radius: 5px;         
             }
         ''')
+
         self.widget.setLayout(QVBoxLayout())
         self.widget.layout().setContentsMargins(0,0,0,0)
         self.setMouseTracking(True)

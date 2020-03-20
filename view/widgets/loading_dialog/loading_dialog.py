@@ -7,12 +7,17 @@ from PyQt5.QtWidgets import QDialog,QLabel,QVBoxLayout,QApplication,QWidget
 
 
 class QLoadingDialog(QDialog):
-    def __init__(self,gif_file: str = os.path.abspath("./assets/icons/dark/loading.gif"),parent=None):
+    def __init__(self,parent=None):
         super(QLoadingDialog,self).__init__()
         self.setFixedSize(100,100)
         # self.setWindowOpacity(0.8)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        app=QApplication.instance()
+        curr_theme="light"
+        if app:
+            curr_theme=app.property("theme")
+        gif_file=os.path.abspath("./assets/icons/{}/loading.gif".format(curr_theme))
         self.movie=QMovie(gif_file)
         self.label=QLabel()
         self.label.setMovie(self.movie)

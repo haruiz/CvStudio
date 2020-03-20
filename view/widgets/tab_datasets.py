@@ -54,7 +54,8 @@ class DatasetGridWidget(QWidget,QObject):
 
     def build_ds_card(self,ds: DatasetVO):
         card_widget: GridCard=GridCard(debug=False)
-        card_widget.label="{} \n {}".format(ds.name,size(ds.size,system=alternative) if ds.size else "0 MB")
+        card_widget.label = "{}".format(ds.name)
+        card_widget.label2 ="{} files \n {} ".format(ds.count, size(ds.size,system=alternative) if ds.size else "0 MB")
         btn_delete=ImageButton(GUIUtilities.get_icon("delete.png"),size=QSize(15,15))
         btn_delete.setToolTip("Delete dataset")
         btn_edit=ImageButton(GUIUtilities.get_icon("edit.png"),size=QSize(15,15))
@@ -77,7 +78,6 @@ class DatasetGridWidget(QWidget,QObject):
         card_widget.body=ImageButton(icon)
         btn_refresh.clicked.connect(lambda: self.refresh_dataset_action_signal.emit(ds))
         card_widget.body.doubleClicked.connect(lambda evt: self.open_dataset_action_signal.emit(ds))
-
         return card_widget
 
     def build_new_button(self):
@@ -154,7 +154,6 @@ class DatasetTabWidget(QScrollArea):
             if isinstance(curr_tab_widget,tab_class):
                 tab_widget_manager.removeTab(i)
 
-    @QtCore.pyqtSlot()
     @gui_exception
     def btn_new_dataset_on_slot(self):
         form=DatasetForm()
@@ -163,7 +162,6 @@ class DatasetTabWidget(QScrollArea):
             self._ds_dao.save(vo)
             self.load()
 
-    @QtCore.pyqtSlot(DatasetVO)
     @gui_exception
     def btn_delete_dataset_on_slot(self,vo: DatasetVO):
         reply=QMessageBox.question(self,'Confirmation',"Are you sure?",QMessageBox.Yes | QMessageBox.No,
@@ -175,7 +173,6 @@ class DatasetTabWidget(QScrollArea):
             FileUtilities.delete_folder(ds_folder)
             self.load()
 
-    @QtCore.pyqtSlot(DatasetVO)
     @gui_exception
     def edit_dataset_action_slot(self,vo: DatasetVO):
         form=DatasetForm(vo)
@@ -184,11 +181,9 @@ class DatasetTabWidget(QScrollArea):
             self._ds_dao.save(vo)
             self.load()
 
-    @QtCore.pyqtSlot(DatasetVO)
     def refresh_dataset_action_slot(self,vo: DatasetVO):
         self.load()
 
-    @QtCore.pyqtSlot(DatasetVO)
     def open_dataset_action_slot(self,vo: DatasetVO):
         tab_widget_manager: QTabWidget=self.window().tab_widget_manager
         tab_widget=MediaTabWidget(vo)
@@ -284,6 +279,8 @@ class DatasetTabWidget(QScrollArea):
         for img_path,img_annotations in images:
             boxes=[]
             for annot in img_annotations:
+                if annot["label_name"] is None or annot["label_name"] == "None":
+                    continue
                 if annot["annot_kind"] == "box":
                     points=list(map(int,annot["annot_points"].split(",")))
                     box=dict()
