@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QTreeView,QAbstractItemView,QMenu,QAction,QDialog,QT
 
 from core import HubClientFactory,Framework
 from dao.hub_dao import HubDao
-from util import GUIUtilities,Worker
+from util import GUIUtilities as gui,Worker
 from view.forms import NewRepoForm
 from view.widgets.loading_dialog import QLoadingDialog
 from vo import DatasetVO,HubVO
@@ -13,7 +13,9 @@ from ..common import CustomModel, CustomNode
 
 class ModelsTreeview(QTreeView, QObject):
     action_click = pyqtSignal(QAction)
-    CTX_MENU_NEW_DATASET_ACTION = "Add new repository"
+    CTX_MENU_ADD_REPOSITORY_ACTION = "Add new repository"
+    CTX_MENU_DELETE_REPO_ACTION="Delete repository"
+    CTX_MENU_UPDATE_REPO_ACTION="Update repository"
     CTX_MENU_AUTO_LABEL_ACTION= "Auto-Label"
 
     def __init__(self, parent=None):
@@ -27,26 +29,36 @@ class ModelsTreeview(QTreeView, QObject):
         self._thread_pool = QThreadPool()
         self._loading_dialog = QLoadingDialog()
         model: CustomModel=CustomModel(["Name","Uri"])
-        self._root_node = CustomNode(["Models",""],level=1,status=1,success_icon=GUIUtilities.get_icon("database.png"))
+        self._root_node = CustomNode(["Models",""],level=1,status=1,success_icon=gui.get_icon("database.png"))
         model.addChild(self._root_node)
         self.setModel(model)
-
         #self.selectionModel().selectionChanged.connect(self.selectionChangedSlot)
 
     def contextMenuEvent(self, evt: QContextMenuEvent) -> None:
         index: QModelIndex=self.indexAt(evt.pos())
+        actions = []
         if index.isValid():
             node: CustomNode=index.internalPointer()
+            index: QModelIndex=self.indexAt(evt.pos())
             menu=QMenu()
             menu.triggered.connect(self.context_menu_actions_handler)
             if node.level == 1:
-                icon: QIcon = GUIUtilities.get_icon('delete-dataset.png')
-                action: QAction=menu.addAction(icon, self.CTX_MENU_NEW_DATASET_ACTION)
-                action.setData(node)
+                actions=[
+                    QAction(gui.get_icon('new_folder.png'),self.CTX_MENU_ADD_REPOSITORY_ACTION)
+                ]
+            elif node.level == 2:
+                actions = [
+                    QAction(gui.get_icon('delete.png'),self.CTX_MENU_DELETE_REPO_ACTION),
+                    QAction(gui.get_icon('refresh.png'),self.CTX_MENU_UPDATE_REPO_ACTION)
+                ]
             elif node.level == 3:
-                icon: QIcon=GUIUtilities.get_icon('delete-dataset.png')
-                action: QAction=menu.addAction(icon,self.CTX_MENU_AUTO_LABEL_ACTION)
-                action.setData(node)
+                actions = [
+                    QAction(gui.get_icon('robotic-hand.png'),self.CTX_MENU_AUTO_LABEL_ACTION)
+                ]
+            if actions:
+                for act in actions:
+                    act.setData(index)
+                    menu.addAction(act)
             menu.exec_(self.mapToGlobal(evt.pos()))
 
     def _update_model(self):
@@ -57,8 +69,9 @@ class ModelsTreeview(QTreeView, QObject):
         parent_node=CustomNode(
             [vo.path,""],
             level=2,
+            tag=vo,
             status=1,
-            success_icon=GUIUtilities.get_icon("github.png")
+            success_icon=gui.get_icon("github.png")
         )
         self._root_node.addChild(parent_node)
         for m in vo.models:
@@ -66,8 +79,9 @@ class ModelsTreeview(QTreeView, QObject):
                 [m.name,""],
                 level=3,
                 tooltip=m.description,
+                tag=m,
                 status=1,
-                success_icon=GUIUtilities.get_icon("cube.png")
+                success_icon=gui.get_icon("cube.png")
             )
             parent_node.addChild(child_node)
         self._update_model()

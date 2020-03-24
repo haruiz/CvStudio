@@ -15,7 +15,8 @@ from PyQt5.QtCore import QSize,QThreadPool,QPointF,QPoint,QRectF,QItemSelection,
 from PyQt5.QtGui import QPixmap,QCursor,QWheelEvent
 from PyQt5.QtWidgets import QWidget,QGraphicsItem,QAbstractItemView,QDialog,QAction, \
     QLabel,QGraphicsScene,QMenu,QGraphicsDropShadowEffect,QFrame,QListWidgetItem,QBoxLayout,QVBoxLayout,QFormLayout, \
-    QSpinBox
+    QSpinBox,QMessageBox
+from sympy.physics.units import action
 
 from constants import COCO_INSTANCE_CATEGORY_NAMES
 from core import HubClientFactory,Framework
@@ -26,6 +27,7 @@ from decor import gui_exception,work_exception
 from util import GUIUtilities,Worker,ImageUtilities
 from view.forms import NewRepoForm
 from view.forms.label_form import NewLabelForm
+from view.widgets.common import CustomNode
 from view.widgets.double_slider import DoubleSlider
 from view.widgets.common.custom_list import CustomListWidgetItem
 from view.widgets.image_viewer import ImageViewer
@@ -151,7 +153,6 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self._channels=[]
         self._toolbox = []
         self.build_toolbox()
-
 
     @property
     def image(self):
@@ -384,47 +385,98 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 label_vo = self._labels_dao.save(label_vo)
                 self.treeview_labels.add_row(label_vo)
         elif action.text() == self.treeview_labels.CTX_MENU_DELETE_LABEL:
+            reply=QMessageBox.question(self,'Delete Label',
+                   "Are you sure?",
+                   QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
             index : QModelIndex = action.data()
             if index:
                 label_vo=model.index(index.row(),2).data()
-                self._labels_dao.delete(label_vo.id)
+                self._labels_dao.delete(label_vo.id)#TODO: this method should be call from other thread
                 self.image_viewer.remove_annotations_by_label(label_vo.name)
                 model.removeRow(index.row())
 
     @gui_exception
-    def add_repository(self):
+    def add_repository(self, repo_path):
 
         @work_exception
-        def do_work(repo):
+        def do_work():
             hub_client=HubClientFactory.create(Framework.PyTorch)
-            hub=hub_client.fetch_model(repo,force_reload=True)
-            self._hub_dao.save(hub)
+            hub=hub_client.fetch_model(repo_path,force_reload=True)
+            id = self._hub_dao.save(hub)
+            hub.id = id
             return hub,None
 
         @gui_exception
         def done_work(result):
             self._loading_dialog.close()
-            data,error=result
-            if error is None:
-                self.treeview_models.add_node(data)
+            hub,error=result
+            if error:
+                raise error
+            self.treeview_models.add_node(hub)
+        worker=Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)
+        self._loading_dialog.exec_()
 
-        form=NewRepoForm()
-        if form.exec_() == QDialog.Accepted:
-            repository=form.result
-            worker=Worker(do_work,repository)
-            worker.signals.result.connect(done_work)
-            self._thread_pool.start(worker)
-            self._loading_dialog.exec_()
+    @gui_exception
+    def update_repository(self,hub: HubVO):
+        hub_path = hub.path
+        hub_id = hub.id
+        @work_exception
+        def do_work():
+            hub_client=HubClientFactory.create(Framework.PyTorch)
+            hub=hub_client.fetch_model(hub_path,force_reload=True)
+            hub.id = hub_id
+            self._hub_dao.update(hub)
+            return hub,None
+
+        @gui_exception
+        def done_work(result):
+            self._loading_dialog.close()
+            hub,error=result
+            if error:
+                raise error
+            self.treeview_models.add_node(hub)
+        worker=Worker(do_work)
+        worker.signals.result.connect(done_work)
+        self._thread_pool.start(worker)
+        self._loading_dialog.exec_()
 
     @gui_exception
     def trv_models_action_click_slot(self,action: QAction):
-        if action.text() == self.treeview_models.CTX_MENU_NEW_DATASET_ACTION:
-            self.add_repository()
+        model=self.treeview_models.model()
+        if action.text() == self.treeview_models.CTX_MENU_ADD_REPOSITORY_ACTION:
+            form=NewRepoForm()
+            if form.exec_() == QDialog.Accepted:
+                repository=form.result
+                self.add_repository(repository)
+        elif action.text() == self.treeview_models.CTX_MENU_UPDATE_REPO_ACTION:
+            index: QModelIndex=action.data()
+            node: CustomNode=index.internalPointer()
+            hub: HubVO=node.tag
+            if hub and hub.id:
+                model.removeChild(index)
+                self.update_repository(hub)
         elif action.text() == self.treeview_models.CTX_MENU_AUTO_LABEL_ACTION:
-            current_node=action.data()  # model name
-            parent_node=current_node.parent  # repo
-            repo,model=parent_node.get_data(0),current_node.get_data(0)
-            self.predict_annotations_using_pytorch_vision_model(repo, model)
+            index: QModelIndex=action.data()
+            node: CustomNode=index.internalPointer()
+            parent_node=node.parent  # repo
+            repo,model_name=parent_node.get_data(0),node.get_data(0)
+            self.predict_annotations_using_pytorch_thub_model(repo, model_name)
+        if action.text() == self.treeview_models.CTX_MENU_DELETE_REPO_ACTION:
+            reply=QMessageBox.question(self,'Delete Repository',
+                       "Are you sure?",
+                       QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
+            index: QModelIndex=action.data()
+            node: CustomNode=index.internalPointer()
+            hub: HubVO = node.tag
+            if hub:
+                self._hub_dao.delete(hub.id) #TODO: this method should be call from other thread
+                model.removeChild(index)
 
     def image_list_context_menu(self,pos: QPoint):
         menu=QMenu()
@@ -669,11 +721,42 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                 contours.append(c_points)
         return contours
 
+    @staticmethod
+    def invoke_cov19_model(image_path, repo,model_name):
+        from PIL import Image
+        from torchvision import transforms
+        import torch
+        import inspect
+        # whether to force a fresh download of github repo unconditionally. Default is False.
+        model=torch.hub.load(repo,model_name,pretrained=True,force_reload=False)
+        model.eval()
+        input_image=Image.open(image_path)
+        input_image=input_image.convert("RGB")
+        preprocess=transforms.Compose([
+            transforms.Resize(255),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
+        ])
+        input_tensor=preprocess(input_image)
+        input_batch=input_tensor.unsqueeze(0)
+        output=model(input_batch)
+        _,preds_tensor=torch.max(output,1)
+        top_pred=np.squeeze(preds_tensor.numpy())
+        labels_map={0: "conv19",1: "normal"}
+        class_idx = top_pred.item()
+        # show top class
+        return "label", [class_idx, labels_map[class_idx]]
+
+
     @gui_exception
     def predict_annotations_using_pytorch_thub_model(self, repo, model_name):
         @work_exception
         def do_work():
-            pred_result = self.invoke_tf_hub_model(self.tag.file_path,  repo,model_name)
+            if model_name == "covid19":
+                pred_result=self.invoke_cov19_model(self.tag.file_path,repo,model_name)
+            else:
+                pred_result = self.invoke_tf_hub_model(self.tag.file_path,  repo,model_name)
             return pred_result, None
 
         @gui_exception

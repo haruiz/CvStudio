@@ -68,6 +68,7 @@ CVStudio supports:
     pip install -U marshmallow
     pip install hurry.filesize
     pip install Mako
+  pip install kornia
     ```
     
   * Install [PyTorch](https://pytorch.org/) with conda following the [instructions](https://pytorch.org/get-started/locally/)

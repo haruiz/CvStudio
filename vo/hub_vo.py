@@ -1,9 +1,18 @@
 class HubVO:
     def __init__(self):
+        self._id=None
         self._path = ""
         self._source = ""
         self._author = ""
         self._models = []
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = value
 
     @property
     def path(self):

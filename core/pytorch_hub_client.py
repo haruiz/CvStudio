@@ -21,5 +21,4 @@ class PyTorchHubClient(HubClient):
                 hub.models.append(model)
             return hub
         except Exception as ex:
-            print(ex)
-            return None
+            raise Exception("Error fetching the model {}".format(ex)) from ex
