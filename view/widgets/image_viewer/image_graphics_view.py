@@ -139,15 +139,6 @@ class ImageViewer(QGraphicsView,QObject):
         self._img_brightness = value
 
     @property
-    def color_format(self):
-        return self._color_format
-
-    @color_format.setter
-    def color_format(self,value):
-        self._color_format=value
-        self.update_viewer()
-
-    @property
     def image(self):
         return self._image
 
@@ -166,8 +157,9 @@ class ImageViewer(QGraphicsView,QObject):
         self._pixmap=value
 
 
+
     @gui_exception
-    def update_viewer(self):
+    def update_viewer(self, fit_image=True):
         rgb = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
         rgb = ImageUtilities.adjust_image(rgb, self._img_contrast, self._img_brightness)
         rgb = ImageUtilities.adjust_gamma(rgb, self._img_gamma)
@@ -184,8 +176,8 @@ class ImageViewer(QGraphicsView,QObject):
         self._pixmap.signals.hoverLeaveEventSgn.connect(self.pixmap_hoverLeaveEvent_slot)
         self._pixmap.signals.hoverMoveEventSgn.connect(self.pixmap_hoverMoveEvent_slot)
         self._hide_guide_lines()
-        self.fit_to_window()
-
+        if fit_image:
+            self.fit_to_window()
 
 
     @gui_exception
@@ -194,7 +186,6 @@ class ImageViewer(QGraphicsView,QObject):
         self._img_brightness=50.0
         self._img_gamma=1.0
         self._image = self._image_original.copy()
-        self.update_viewer()
 
     @gui_exception
     def equalize_histogram(self):
@@ -477,6 +468,3 @@ class ImageViewer(QGraphicsView,QObject):
             for pt in self._extreme_points.queue:
                 self._scene.removeItem(pt)
             self._extreme_points.queue.clear()
-
-    # def mouseDoubleClickEvent(self, QMouseEvent):
-    #     self.fit_to_window()

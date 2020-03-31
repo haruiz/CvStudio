@@ -63,6 +63,7 @@ CVStudio supports:
     pip install more-itertools
     pip install pandas
     pip install PyQt5
+    pip install apptools -U
     pip install imutils
     pip install peewee
     pip install -U marshmallow

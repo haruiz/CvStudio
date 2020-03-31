@@ -16,7 +16,6 @@ from PyQt5.QtGui import QPixmap,QCursor,QWheelEvent
 from PyQt5.QtWidgets import QWidget,QGraphicsItem,QAbstractItemView,QDialog,QAction, \
     QLabel,QGraphicsScene,QMenu,QGraphicsDropShadowEffect,QFrame,QListWidgetItem,QBoxLayout,QVBoxLayout,QFormLayout, \
     QSpinBox,QMessageBox
-from sympy.physics.units import action
 
 from constants import COCO_INSTANCE_CATEGORY_NAMES
 from core import HubClientFactory,Framework
@@ -281,6 +280,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         self.image, self.tag  = cv2.imread(curr.tag.file_path, cv2.IMREAD_COLOR), curr.tag
         self.load_image()
 
+
     @gui_exception
     def keyPressEvent(self,event: QtGui.QKeyEvent) -> None:
         row=self.images_list_widget.currentRow()
@@ -305,15 +305,15 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
 
     def _update_contrast_slot(self, val):
         self.image_viewer.img_contrast=val
-        self.image_viewer.update_viewer()
+        self.image_viewer.update_viewer(fit_image=False)
 
     def _update_gamma_slot(self, val):
         self.image_viewer.img_gamma=val
-        self.image_viewer.update_viewer()
+        self.image_viewer.update_viewer(fit_image=False)
 
     def _update_brightness_slot(self, val):
         self.image_viewer.img_brightness = val
-        self.image_viewer.update_viewer()
+        self.image_viewer.update_viewer(fit_image=False)
 
     def _reset_sliders(self):
         self._gamma_slider.setValue(1.0)
@@ -341,6 +341,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         @work_exception
         def do_work():
             if curr_action == "reset":
+                self._reset_sliders()
                 self.image_viewer.reset_viewer()
             elif curr_action == "equalize_histo":
                 self.image_viewer.equalize_histogram()
@@ -356,7 +357,6 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             if err:
                 return
             self._loading_dialog.hide()
-            self.image_viewer.update_viewer()
 
         self._loading_dialog.show()
         worker = Worker(do_work)
@@ -726,8 +726,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
         from PIL import Image
         from torchvision import transforms
         import torch
-        import inspect
-        # whether to force a fresh download of github repo unconditionally. Default is False.
+
         model=torch.hub.load(repo,model_name,pretrained=True,force_reload=False)
         model.eval()
         input_image=Image.open(image_path)

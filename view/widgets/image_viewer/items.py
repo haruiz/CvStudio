@@ -172,9 +172,9 @@ class EditablePolygonPointSignals(QObject):
 
 class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
     circle=QtGui.QPainterPath()
-    circle.addRect(QtCore.QRectF(-3,-3,5,5))
+    circle.addRect(QtCore.QRectF(-1,-1,2,2))
     square=QtGui.QPainterPath()
-    square.addRect(QtCore.QRectF(-5,-5,10,10))
+    square.addRect(QtCore.QRectF(-3,-3,6,6))
 
     def __init__(self,index=None):
         super(EditablePolygonPoint,self).__init__()
