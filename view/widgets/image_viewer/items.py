@@ -174,7 +174,7 @@ class EditablePolygonPoint(QtWidgets.QGraphicsPathItem):
     circle=QtGui.QPainterPath()
     circle.addRect(QtCore.QRectF(-1,-1,2,2))
     square=QtGui.QPainterPath()
-    square.addRect(QtCore.QRectF(-3,-3,6,6))
+    square.addRect(QtCore.QRectF(-2.5,-2.5,5,5))
 
     def __init__(self,index=None):
         super(EditablePolygonPoint,self).__init__()
