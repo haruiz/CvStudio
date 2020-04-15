@@ -357,6 +357,7 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
             if err:
                 return
             self._loading_dialog.hide()
+            self.image_viewer.update_viewer()
 
         self._loading_dialog.show()
         worker = Worker(do_work)
@@ -559,12 +560,14 @@ class ImageViewerWidget(QWidget,Ui_Image_Viewer_Widget):
                                     item=EditableBox(roi)
                                 else:
                                     item=EditableEllipse()
+                                item.tag = self.tag.dataset
                                 item.setRect(roi)
                                 item.label=vo.label
                                 self.image_viewer.scene().addItem(item)
                             elif vo.kind == "polygon":
                                 item=EditablePolygon()
                                 item.label=vo.label
+                                item.tag = self.tag.dataset
                                 self.image_viewer.scene().addItem(item)
                                 for p in points:
                                     item.addPoint(QPoint(p[0]-offset.x(),p[1]-offset.y()))

@@ -152,29 +152,28 @@ class ImageViewer(QGraphicsView,QObject):
     def pixmap(self) -> ImagePixmap:
         return self._pixmap
 
-    @pixmap.setter
-    def pixmap(self,value):
-        self._pixmap=value
-
-
 
     @gui_exception
     def update_viewer(self, fit_image=True):
         rgb = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
         rgb = ImageUtilities.adjust_image(rgb, self._img_contrast, self._img_brightness)
         rgb = ImageUtilities.adjust_gamma(rgb, self._img_gamma)
-        rgb = pil_image=Image.fromarray(rgb)
-        qppixmap_image=pil_image.toqpixmap()
+        pil_image = Image.fromarray(rgb)
+        qppixmap_image = pil_image.toqpixmap()
+        x, y = -qppixmap_image.width() / 2, -qppixmap_image.height() / 2
+
         if self._pixmap:
-            self._scene.removeItem(self._pixmap)
-        self._pixmap=ImagePixmap()
-        self._pixmap.setPixmap(qppixmap_image)
-        x, y = -qppixmap_image.width()/2,-qppixmap_image.height()/2
-        self._pixmap.setOffset(x, y)
-        self._scene.addItem(self._pixmap)
-        self._pixmap.signals.hoverEnterEventSgn.connect(self.pixmap_hoverEnterEvent_slot)
-        self._pixmap.signals.hoverLeaveEventSgn.connect(self.pixmap_hoverLeaveEvent_slot)
-        self._pixmap.signals.hoverMoveEventSgn.connect(self.pixmap_hoverMoveEvent_slot)
+            self._pixmap.resetTransform()
+            self._pixmap.setPixmap(qppixmap_image)
+            self._pixmap.setOffset(x, y)
+        else:
+            self._pixmap = ImagePixmap()
+            self._pixmap.setPixmap(qppixmap_image)
+            self._pixmap.setOffset(x, y)
+            self._scene.addItem(self._pixmap)
+            self._pixmap.signals.hoverEnterEventSgn.connect(self.pixmap_hoverEnterEvent_slot)
+            self._pixmap.signals.hoverLeaveEventSgn.connect(self.pixmap_hoverLeaveEvent_slot)
+            self._pixmap.signals.hoverMoveEventSgn.connect(self.pixmap_hoverMoveEvent_slot)
         self._hide_guide_lines()
         if fit_image:
             self.fit_to_window()
@@ -190,7 +189,18 @@ class ImageViewer(QGraphicsView,QObject):
     @gui_exception
     def equalize_histogram(self):
         self._image =ImageUtilities.histogram_equalization(self._image)
-        
+
+
+    @gui_exception
+    def correct_lightness(self):
+        self._image = ImageUtilities.correct_lightness(self._image)
+
+
+    @gui_exception
+    def kmeans(self, k):
+        self._image = ImageUtilities.kmeans(self._image.copy(), k)
+
+
     @property
     def current_tool(self):
         return self._current_tool
@@ -208,19 +218,6 @@ class ImageViewer(QGraphicsView,QObject):
             self.enable_items(True)
         else:
             self.enable_items(False)
-
-
-    @gui_exception
-    def correct_lightness(self):
-        self._image =ImageUtilities.correct_lightness(self._image)
-
-    @gui_exception
-    def correct_lightness(self):
-        self._image =ImageUtilities.correct_lightness(self._image)
-
-    @gui_exception
-    def kmeans(self, k):
-        self._image =ImageUtilities.kmeans(self._image.copy(), k)
 
     def fit_to_window(self):
         if not self._pixmap or not self._pixmap.pixmap():

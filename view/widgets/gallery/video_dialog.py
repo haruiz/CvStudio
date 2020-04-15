@@ -3,7 +3,7 @@ import math
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl,QObject,pyqtSignal
 from PyQt5.QtGui import QMouseEvent,QColor
-from PyQt5.QtMultimedia import QMediaPlayer,QMediaContent
+from PyQt5.QtMultimedia import  QMediaPlayer,QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import QDialog,QVBoxLayout,QWidget,QSlider,QGraphicsDropShadowEffect,QFrame
 
