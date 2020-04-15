@@ -19,6 +19,7 @@ class DatasetEntity(BaseModel):
     folder = TextField()
     date = DateField()
     data_type = CharField(default="Images")
+
     class Meta:
         table_name = 'dataset'
 
@@ -28,6 +29,7 @@ class DatasetEntryEntity(BaseModel):
     file_size = CharField()
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
     label = IntegerField(null=True)
+
     class Meta:
         indexes = (
             (("file_path", "dataset"), True),
@@ -40,6 +42,7 @@ class LabelEntity(BaseModel):
     description = CharField(null=True)
     color = CharField(null=None)
     dataset = ForeignKeyField(DatasetEntity, on_delete="CASCADE")
+
     class Meta:
         table_name = 'label'
 
@@ -66,6 +69,7 @@ class AnnotationEntity(BaseModel):
     label = ForeignKeyField(LabelEntity, null=True, on_delete="CASCADE")
     points = CharField(null=True)
     kind = CharField(null=True)
+
     class Meta:
         table_name = "annotation"
 
@@ -80,7 +84,7 @@ def create_tables():
             LabelEntity,
             AnnotationEntity
         ]
-        #db.drop_tables(models)
+        # db.drop_tables(models)
         db.create_tables(models)
         # Create the foreign-key constraint:
         db.execute_sql("PRAGMA foreign_keys=ON")

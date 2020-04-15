@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import partial
+
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 
@@ -138,7 +139,7 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
 
     def mouseMoveEvent(self, event):
         if self.current_instruction == Instructions.Polygon_Instruction:
-            self.polygon_item.movePoint(self.polygon_item.number_of_points()-1, event.scenePos())
+            self.polygon_item.movePoint(self.polygon_item.number_of_points() - 1, event.scenePos())
         super(AnnotationScene, self).mouseMoveEvent(event)
 
 
@@ -176,7 +177,8 @@ class AnnotationWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.m_view)
         self.create_menus()
 
-        QtWidgets.QShortcut(QtCore.Qt.Key_Escape, self, activated=partial(self.m_scene.setCurrentInstruction, Instructions.No_Instruction))
+        QtWidgets.QShortcut(QtCore.Qt.Key_Escape, self,
+                            activated=partial(self.m_scene.setCurrentInstruction, Instructions.No_Instruction))
 
     def create_menus(self):
         menu_file = self.menuBar().addMenu("File")
@@ -190,9 +192,11 @@ class AnnotationWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def load_image(self):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self,
-            "Open Image",
-            QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.PicturesLocation), #QtCore.QDir.currentPath(),
-            "Image Files (*.png *.jpg *.bmp)")
+                                                            "Open Image",
+                                                            QtCore.QStandardPaths.writableLocation(
+                                                                QtCore.QStandardPaths.PicturesLocation),
+                                                            # QtCore.QDir.currentPath(),
+                                                            "Image Files (*.png *.jpg *.bmp)")
         if filename:
             self.m_scene.load_image(filename)
             self.m_view.fitInView(self.m_scene.image_item, QtCore.Qt.KeepAspectRatio)

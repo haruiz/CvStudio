@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields
+
 from .annotation_scheme import AnnotSchema
 
 
@@ -9,7 +10,7 @@ class ImageScheme(Schema):
 
 class ImageSchemeVO:
     def __init__(self):
-        self._path=None
+        self._path = None
         self._regions = []
 
     @property

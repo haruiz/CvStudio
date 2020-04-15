@@ -1,4 +1,4 @@
-from dao import db,LabelEntity,DatasetEntryEntity
+from dao import db, LabelEntity, DatasetEntryEntity
 from vo import LabelVO
 
 
@@ -30,19 +30,19 @@ class LabelDao:
 
     @db.connection_context()
     def find_by_name(self, ds_id, label_name):
-        query=(
+        query = (
             LabelEntity
                 .select()
                 .where((LabelEntity.dataset == ds_id)
                        & (LabelEntity.name == label_name)))
         # print(query)
-        cursor=query.dicts().execute()
-        result=list(cursor)
-        vo=LabelVO()
+        cursor = query.dicts().execute()
+        result = list(cursor)
+        vo = LabelVO()
         if len(result) > 0:
-            row=result[0]
-            for k,v in row.items():
-                setattr(vo,k,v)
+            row = result[0]
+            for k, v in row.items():
+                setattr(vo, k, v)
             return vo
         return None
 

@@ -5,7 +5,7 @@ from .pytorch_api_client import PytorchApiClient
 
 class ApiClientFactory:
     @classmethod
-    def create(cls,provider=Framework.PyTorch) -> ApiClient:
+    def create(cls, provider=Framework.PyTorch) -> ApiClient:
         if provider == Framework.PyTorch:
             return PytorchApiClient()
         elif provider == Framework.TensorFlow:

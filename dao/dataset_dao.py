@@ -1,11 +1,11 @@
 import os
+from datetime import datetime
 
 from peewee import *
 
-from datetime import datetime
-from dao import db,DatasetEntity,DatasetEntryEntity,LabelEntity
+from dao import db, DatasetEntity, DatasetEntryEntity, LabelEntity
 from util import MiscUtilities
-from vo import DatasetVO,DatasetEntryVO,LabelVO
+from vo import DatasetVO, DatasetEntryVO, LabelVO
 
 
 class DatasetDao:
@@ -52,14 +52,14 @@ class DatasetDao:
                 .select()
                 .where((DatasetEntryEntity.dataset == ds_id)
                        & (DatasetEntryEntity.file_path.endswith(os.path.split(image_path)[1]))))
-        #print(query)
+        # print(query)
         cursor = query.dicts().execute()
         result = list(cursor)
         vo = DatasetEntryVO()
         if len(result) > 0:
             row = result[0]
-            for k,v in row.items():
-                setattr(vo,k,v)
+            for k, v in row.items():
+                setattr(vo, k, v)
             return vo
         return None
 
@@ -72,9 +72,9 @@ class DatasetDao:
     def tag_entries(self, entries: [DatasetEntryVO], label: LabelVO):
         ids = [vo.id for vo in entries]
         for chunk in MiscUtilities.chunk(ids, 100):
-            rows=(DatasetEntryEntity
-                        .update(label = label.id)
-                            .where(DatasetEntryEntity.id.in_(list(chunk))).execute())
+            rows = (DatasetEntryEntity
+                    .update(label=label.id)
+                    .where(DatasetEntryEntity.id.in_(list(chunk))).execute())
 
     @db.atomic()
     def add_entries(self, entries: [DatasetEntryVO]):
@@ -131,16 +131,16 @@ class DatasetDao:
 
     @db.connection_context()
     def fetch_entries_for_classification(self, ds_id):
-        en: DatasetEntryEntity=DatasetEntryEntity.alias("en")
-        lbl: LabelEntity =LabelEntity.alias("lbl")
+        en: DatasetEntryEntity = DatasetEntryEntity.alias("en")
+        lbl: LabelEntity = LabelEntity.alias("lbl")
         query = (en.select(
-                    en.file_path,
-                    lbl.name
-                )
-                .join(
-                    lbl,
-                    JOIN.INNER,
-                    on=en.label == lbl.id)
-                .where(en.dataset == ds_id and en.label.is_null(False)))
+            en.file_path,
+            lbl.name
+        )
+                 .join(
+            lbl,
+            JOIN.INNER,
+            on=en.label == lbl.id)
+                 .where(en.dataset == ds_id and en.label.is_null(False)))
         cursor = query.dicts().execute()
         return list(cursor)

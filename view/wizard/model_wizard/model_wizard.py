@@ -1,16 +1,15 @@
-from PyQt5.QtCore import QThreadPool
-from PyQt5.QtWidgets import QWizard,QWizardPage,QComboBox,QFormLayout,QSpinBox,QWidget,QVBoxLayout,QDoubleSpinBox
-from core import  Framework, ApiClient, ApiClientFactory
 from PyQt5 import QtCore
+from PyQt5.QtCore import QThreadPool
+from PyQt5.QtWidgets import QWizard, QWizardPage, QComboBox, QFormLayout, QSpinBox, QWidget, QVBoxLayout, QDoubleSpinBox
 
-from core.pytorch_api_client import PytorchCVDataset
+from core import Framework, ApiClientFactory
 from dao import DatasetDao
-from util import GUIUtilities,Worker
+from util import GUIUtilities, Worker
 
 
 class ModelPicker(QComboBox):
-    def __init__(self, parent=None, provider = Framework.PyTorch):
-        super(ModelPicker,self).__init__(parent)
+    def __init__(self, parent=None, provider=Framework.PyTorch):
+        super(ModelPicker, self).__init__(parent)
         self._api_client = ApiClientFactory.create(provider)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         models = self._api_client.list_models()
@@ -22,12 +21,12 @@ class DatasetPicker(QComboBox):
     def __init__(self, parent=None):
         super(DatasetPicker, self).__init__(parent)
         self.setCursor(QtCore.Qt.PointingHandCursor)
-        self._thread_pool=QThreadPool()
+        self._thread_pool = QThreadPool()
         self.load()
 
     def load(self):
         def do_work():
-            ds_dao=DatasetDao()
+            ds_dao = DatasetDao()
             return ds_dao.fetch_all()
 
         def done_work(result):
@@ -49,21 +48,19 @@ class BaseModelSelectionPage(QWizardPage):
         self.ds_picker = DatasetPicker()
         self.arch_picker = ModelPicker()
         self._num_of_epochs_picker = QSpinBox()
-        self._num_of_workers_picker=QSpinBox()
-        self._batch_size_picker=QSpinBox()
+        self._num_of_workers_picker = QSpinBox()
+        self._batch_size_picker = QSpinBox()
         self._learning_rate_picker = QDoubleSpinBox()
-        self._learning_momentum_picker=QDoubleSpinBox()
-        self._learning_weight_decay_picker=QDoubleSpinBox()
-        self._learning_weight_decay_picker=QDoubleSpinBox()
-        _section_layout.addRow(self.tr("Dataset: "),self.ds_picker)
-        _section_layout.addRow(self.tr("Architecture: "),self.arch_picker)
-        _section_layout.addRow(self.tr("Number of epochs: "),self._num_of_epochs_picker)
-        _section_layout.addRow(self.tr("Number of workers: "),self._num_of_workers_picker)
-        _section_layout.addRow(self.tr("Batch Size: "),self._batch_size_picker)
-        _section_layout.addRow(self.tr("Learning rate: "),self._learning_rate_picker)
-        self._layout.addWidget(GUIUtilities.wrap_with_groupbox(_model_section_widget,"Model Details"))
-
-
+        self._learning_momentum_picker = QDoubleSpinBox()
+        self._learning_weight_decay_picker = QDoubleSpinBox()
+        self._learning_weight_decay_picker = QDoubleSpinBox()
+        _section_layout.addRow(self.tr("Dataset: "), self.ds_picker)
+        _section_layout.addRow(self.tr("Architecture: "), self.arch_picker)
+        _section_layout.addRow(self.tr("Number of epochs: "), self._num_of_epochs_picker)
+        _section_layout.addRow(self.tr("Number of workers: "), self._num_of_workers_picker)
+        _section_layout.addRow(self.tr("Batch Size: "), self._batch_size_picker)
+        _section_layout.addRow(self.tr("Learning rate: "), self._learning_rate_picker)
+        self._layout.addWidget(GUIUtilities.wrap_with_groupbox(_model_section_widget, "Model Details"))
 
 
 class ModelWizard(QWizard):
@@ -80,12 +77,12 @@ class ModelWizard(QWizard):
     def finish_button_click(self):
         index = self._model_params_page.ds_picker.currentIndex()
         ds_id = self._model_params_page.ds_picker.itemData(index)
-        index=self._model_params_page.arch_picker.currentIndex()
+        index = self._model_params_page.arch_picker.currentIndex()
         model = self._model_params_page.arch_picker.itemData(index)
         print(model)
         api_client = ApiClientFactory.create(Framework.PyTorch)
         dataset = api_client.build_dataset(ds_id)
-        #model = api_client.build_model()
+        # model = api_client.build_model()
 
-        #apiClient = ApiClientFactory.create(Framework.PyTorch)
-        #apiClient.build_dataset()
+        # apiClient = ApiClientFactory.create(Framework.PyTorch)
+        # apiClient.build_dataset()

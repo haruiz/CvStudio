@@ -1,7 +1,7 @@
 class DatasetEntryVO:
     def __init__(self):
         self._id = None
-        self._file_path =""
+        self._file_path = ""
         self._file_size = ""
         self._dataset = ""
         self._label = None
@@ -19,7 +19,7 @@ class DatasetEntryVO:
         return self._file_path
 
     @file_path.setter
-    def file_path(self,value):
+    def file_path(self, value):
         self._file_path = value
 
     @property
@@ -39,7 +39,7 @@ class DatasetEntryVO:
         self._dataset = value
 
     def to_array(self):
-        return [self.file_path,self.file_size,self.dataset, None]
+        return [self.file_path, self.file_size, self.dataset, None]
 
     @property
     def label(self):

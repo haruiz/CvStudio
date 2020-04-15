@@ -1,6 +1,6 @@
 class HubVO:
     def __init__(self):
-        self._id=None
+        self._id = None
         self._path = ""
         self._source = ""
         self._author = ""

@@ -1,22 +1,23 @@
-import os
 import typing
-from PyQt5 import QtCore,QtGui
-from PyQt5.QtCore import QObject,pyqtSignal,pyqtSlot,QSize
+from abc import abstractmethod
+
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QObject, pyqtSignal, QSize
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget,QPushButton,QLabel,QApplication
-from abc  import abstractmethod
+from PyQt5.QtWidgets import QWidget, QApplication
+
 from util import GUIUtilities
-from ..image_button import ImageButton
-from .gallery_action import GalleryAction
-from .label_hovered import LabelHovered
 from .base_card import Ui_GalleryCard
-from .video_dialog import VideoDialog
+from .gallery_action import GalleryAction
 from .image_dialog import ImageDialog
+from .label_hovered import LabelHovered
+from .video_dialog import VideoDialog
+from ..image_button import ImageButton
 
 
 class GalleryCard(QWidget, Ui_GalleryCard, QObject):
     doubleClicked = pyqtSignal(QWidget)
-    actionClicked = pyqtSignal(str,object)
+    actionClicked = pyqtSignal(str, object)
     selected_style = {
         "dark": """
                QFrame {
@@ -48,7 +49,7 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
             """
     }
     unselected_style = {
-       "gray":  """
+        "gray": """
            QFrame {
                background-color: black;
                 border-width: 1px;
@@ -84,7 +85,7 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
         self.label_text.setStyleSheet("QLabel{ font-size: 12px; }")
         self.buttons_layout.setAlignment(QtCore.Qt.AlignCenter)
         self._is_selected = False
-        self._is_broken=False
+        self._is_broken = False
         self._tag = None
         self._file_path = None
 
@@ -139,7 +140,7 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
     @label.setter
     def label(self, value):
         self.label_text.setText(value)
-        
+
     @property
     def is_selected(self):
         return self._is_selected
@@ -154,11 +155,11 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
 
     @is_selected.setter
     def is_selected(self, value):
-        self._is_selected  = value
-        app: QApplication=QApplication.instance()
-        curr_theme="dark"
+        self._is_selected = value
+        app: QApplication = QApplication.instance()
+        curr_theme = "dark"
         if app:
-            curr_theme=app.property("theme")
+            curr_theme = app.property("theme")
         if self.is_selected and self.thumbnail:
             self.thumbnail.widget().setStyleSheet(self.selected_style[curr_theme])
         else:
@@ -171,14 +172,14 @@ class GalleryCard(QWidget, Ui_GalleryCard, QObject):
     def mousePressEvent(self, evt: QtGui.QMouseEvent) -> None:
         if evt.button() == QtCore.Qt.LeftButton:
             if self.childAt(evt.pos()) == self.thumbnail.widget():
-                self.is_selected=not self.is_selected
+                self.is_selected = not self.is_selected
 
     def add_buttons(self, args: typing.Any):
         if isinstance(args, list):
             for action in args:
                 if isinstance(action, GalleryAction):
-                    button=ImageButton(action.icon, size=QSize(15,15))
-                    button.tag= action.name
+                    button = ImageButton(action.icon, size=QSize(15, 15))
+                    button.tag = action.name
                     button.setToolTip(action.tooltip)
                     button.clicked.connect(self.action_clicked_slot)
                     button.setFixedWidth(30)
@@ -203,7 +204,7 @@ class ImageCard(GalleryCard):
 
     def hover_timeout_slot(self):
         if self.file_path and not self.is_broken:
-            viewer=ImageDialog(self.file_path)
+            viewer = ImageDialog(self.file_path)
             viewer.exec_()
 
     @property
@@ -211,18 +212,19 @@ class ImageCard(GalleryCard):
         return self._image_source
 
     @source.setter
-    def source(self,pixmap):
+    def source(self, pixmap):
         self._image_source = pixmap
         self._image_widget.setPixmap(pixmap)
 
-class   VideoCard(GalleryCard):
+
+class VideoCard(GalleryCard):
     def __init__(self, parent=None):
         super(VideoCard, self).__init__(parent)
         self._duration = None
-        self._video_source=None
-        self._video_widget=LabelHovered()
+        self._video_source = None
+        self._video_widget = LabelHovered()
         self._video_widget.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-        self.thumbnail=self._video_widget
+        self.thumbnail = self._video_widget
         self._video_widget.hoverTimeout.connect(self.hover_timeout_slot)
 
     def hover_timeout_slot(self):
@@ -235,11 +237,11 @@ class   VideoCard(GalleryCard):
         return self._video_source
 
     @source.setter
-    def source(self,value):
-        self._video_source=value
-        qimage=GUIUtilities.array_to_qimage(self._video_source)
+    def source(self, value):
+        self._video_source = value
+        qimage = GUIUtilities.array_to_qimage(self._video_source)
         pixmap = QPixmap.fromImage(qimage)
-        pixmap=pixmap.scaledToHeight(120,mode=QtCore.Qt.SmoothTransformation)
+        pixmap = pixmap.scaledToHeight(120, mode=QtCore.Qt.SmoothTransformation)
         # pixmap=pixmap.scaled(QSize(150,150),aspectRatioMode=QtCore.Qt.KeepAspectRatio,transformMode=QtCore.Qt.SmoothTransformation)
         # image_widget.setScaledContents(True)
         self._video_widget.setPixmap(pixmap)
@@ -251,9 +253,3 @@ class   VideoCard(GalleryCard):
     @duration.setter
     def duration(self, value):
         self._duration = value
-
-
-
-
-
-

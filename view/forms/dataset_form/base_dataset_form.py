@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 
 class Ui_Base_DatasetDialog(object):
@@ -40,7 +40,7 @@ class Ui_Base_DatasetDialog(object):
         self.verticalLayout.addLayout(self.formLayout)
         self.buttonsbox = QtWidgets.QDialogButtonBox(Base_DatasetDialog)
         self.buttonsbox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonsbox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonsbox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonsbox.setObjectName("buttonsbox")
         self.verticalLayout.addWidget(self.buttonsbox)
 

@@ -1,26 +1,27 @@
-import torch.nn as nn
-import torch
-import numpy as np
 from copy import deepcopy
-import os
+
+import numpy as np
+import torch
+import torch.nn as nn
 from torch.nn import functional as F
+
 affine_par = True
 
 
 def outS(i):
     i = int(i)
-    i = (i+1)/2
-    i = int(np.ceil((i+1)/2.0))
-    i = (i+1)/2
+    i = (i + 1) / 2
+    i = int(np.ceil((i + 1) / 2.0))
+    i = (i + 1) / 2
     return i
 
 
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1,  dilation_=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, dilation_=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False) # change
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)  # change
         self.bn1 = nn.BatchNorm2d(planes, affine=affine_par)
         for i in self.bn1.parameters():
             i.requires_grad = False
@@ -29,7 +30,7 @@ class Bottleneck(nn.Module):
             padding = 2
         elif dilation_ == 4:
             padding = 4
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, # change
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1,  # change
                                padding=padding, bias=False, dilation=dilation_)
         self.bn2 = nn.BatchNorm2d(planes, affine=affine_par)
         for i in self.bn2.parameters():
@@ -71,15 +72,16 @@ class ClassifierModule(nn.Module):
         super(ClassifierModule, self).__init__()
         self.conv2d_list = nn.ModuleList()
         for dilation, padding in zip(dilation_series, padding_series):
-            self.conv2d_list.append(nn.Conv2d(2048, n_classes, kernel_size=3, stride=1, padding=padding, dilation=dilation, bias=True))
+            self.conv2d_list.append(
+                nn.Conv2d(2048, n_classes, kernel_size=3, stride=1, padding=padding, dilation=dilation, bias=True))
 
         for m in self.conv2d_list:
             m.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
         out = self.conv2d_list[0](x)
-        for i in range(len(self.conv2d_list)-1):
-            out += self.conv2d_list[i+1](x)
+        for i in range(len(self.conv2d_list) - 1):
+            out += self.conv2d_list[i + 1](x)
         return out
 
 
@@ -87,18 +89,19 @@ class PSPModule(nn.Module):
     """
     Pyramid Scene Parsing module
     """
+
     def __init__(self, in_features=2048, out_features=512, sizes=(1, 2, 3, 6), n_classes=1):
         super(PSPModule, self).__init__()
         self.stages = []
         self.stages = nn.ModuleList([self._make_stage_1(in_features, size) for size in sizes])
-        self.bottleneck = self._make_stage_2(in_features * (len(sizes)//4 + 1), out_features)
+        self.bottleneck = self._make_stage_2(in_features * (len(sizes) // 4 + 1), out_features)
         self.relu = nn.ReLU()
         self.final = nn.Conv2d(out_features, n_classes, kernel_size=1)
 
     def _make_stage_1(self, in_features, size):
         prior = nn.AdaptiveAvgPool2d(output_size=(size, size))
-        conv = nn.Conv2d(in_features, in_features//4, kernel_size=1, bias=False)
-        bn = nn.BatchNorm2d(in_features//4, affine=affine_par)
+        conv = nn.Conv2d(in_features, in_features // 4, kernel_size=1, bias=False)
+        bn = nn.BatchNorm2d(in_features // 4, affine=affine_par)
         relu = nn.ReLU(inplace=True)
 
         return nn.Sequential(prior, conv, bn, relu)
@@ -112,7 +115,8 @@ class PSPModule(nn.Module):
 
     def forward(self, feats):
         h, w = feats.size(2), feats.size(3)
-        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear', align_corners=True) for stage in self.stages]
+        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear', align_corners=True) for stage in
+                  self.stages]
         priors.append(feats)
         bottle = self.relu(self.bottleneck(torch.cat(priors, 1)))
         out = self.final(bottle)
@@ -201,7 +205,8 @@ class ResNet(nn.Module):
                     module.weight[:, :3, :, :].data = deepcopy(module_ori.weight.data)
                     module.bias = deepcopy(module_ori.bias)
                     for i in range(3, int(module.weight.data.shape[1])):
-                        module.weight[:, i, :, :].data = deepcopy(module_ori.weight[:, -1, :, :][:, np.newaxis, :, :].data)
+                        module.weight[:, i, :, :].data = deepcopy(
+                            module_ori.weight[:, -1, :, :][:, np.newaxis, :, :].data)
                     flag = 1
                 elif module.weight.data.shape == module_ori.weight.data.shape:
                     module.weight.data = deepcopy(module_ori.weight.data)
@@ -234,8 +239,10 @@ class MS_Deeplab(nn.Module):
 
     def forward(self, x):
         input_size = x.size()[2]
-        self.interp1 = nn.Upsample(size=(int(input_size*0.75)+1, int(input_size*0.75)+1), mode='bilinear', align_corners=True)
-        self.interp2 = nn.Upsample(size=(int(input_size*0.5)+1, int(input_size*0.5)+1), mode='bilinear', align_corners=True)
+        self.interp1 = nn.Upsample(size=(int(input_size * 0.75) + 1, int(input_size * 0.75) + 1), mode='bilinear',
+                                   align_corners=True)
+        self.interp2 = nn.Upsample(size=(int(input_size * 0.5) + 1, int(input_size * 0.5) + 1), mode='bilinear',
+                                   align_corners=True)
         self.interp3 = nn.Upsample(size=(outS(input_size), outS(input_size)), mode='bilinear', align_corners=True)
         out = []
         x2 = self.interp1(x)
@@ -307,6 +314,4 @@ def get_10x_lr_params(model):
 
 
 def lr_poly(base_lr, iter_, max_iter=100, power=0.9):
-    return base_lr*((1-float(iter_)/max_iter)**power)
-
-
+    return base_lr * ((1 - float(iter_) / max_iter) ** power)

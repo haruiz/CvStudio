@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject,pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QLabel
 
 from view.widgets.gallery.hover_thread import HoverThread
@@ -7,9 +7,10 @@ from view.widgets.gallery.hover_thread import HoverThread
 
 class LabelHovered(QLabel, QObject):
     hoverTimeout = pyqtSignal(QLabel)
-    def __init__(self,parent=None):
+
+    def __init__(self, parent=None):
         super(LabelHovered, self).__init__(parent)
-        self._hover_thread =None
+        self._hover_thread = None
 
     def timeout_callback(self):
         self.hoverTimeout.emit(self)

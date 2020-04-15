@@ -22,9 +22,9 @@ class AnnotaDao:
             )
         elif isinstance(entry, list):
             with db.atomic():
-                query=(AnnotationEntity
-                       .delete()
-                       .where(AnnotationEntity.entry == entity_id))
+                query = (AnnotationEntity
+                         .delete()
+                         .where(AnnotationEntity.entry == entity_id))
                 query.execute()
                 rows = [
                     (vo.entry,
@@ -35,7 +35,7 @@ class AnnotaDao:
                 # AnnotationEntity \
                 #     .insert_many(rows, fields=["entry", "label", "points", "kind"]) \
                 #     .execute()
-                for batch in chunked(rows,100):
+                for batch in chunked(rows, 100):
                     AnnotationEntity \
                         .insert_many(batch, fields=["entry", "label", "points", "kind"]) \
                         .execute()
@@ -61,7 +61,7 @@ class AnnotaDao:
                 lbl.name.alias("label_name"),
                 lbl.color.alias("label_color")
             )
-                .join(lbl, on=(anns.label == lbl.id),join_type=JOIN.LEFT_OUTER)
+                .join(lbl, on=(anns.label == lbl.id), join_type=JOIN.LEFT_OUTER)
                 .where(anns.entry == entity_id)
         )
         cursor = query.dicts().execute()
@@ -84,16 +84,16 @@ class AnnotaDao:
         return result
 
     @db.connection_context()
-    def get_label(self,entity_id: int):
+    def get_label(self, entity_id: int):
         dse = DatasetEntryEntity.alias()
-        lbl=LabelEntity.alias()
+        lbl = LabelEntity.alias()
         query = (
             dse
                 .select(lbl.name)
                 .join(lbl, on=(dse.label == lbl.id))
                 .where(dse.id == entity_id)
         )
-        result=list(query.dicts().execute())
+        result = list(query.dicts().execute())
         return result[0]["name"] if len(result) > 0 else None
 
     @db.connection_context()

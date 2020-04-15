@@ -3,18 +3,17 @@ from PyQt5.QtWidgets import QSlider
 
 
 class DoubleSlider(QSlider):
-
     # create our our signal that we can connect to if necessary
     doubleValueChanged = pyqtSignal(float)
 
     def __init__(self, decimals=3, *args, **kargs):
-        super(DoubleSlider, self).__init__( *args, **kargs)
+        super(DoubleSlider, self).__init__(*args, **kargs)
         self._multi = 10 ** decimals
 
         self.valueChanged.connect(self.emitDoubleValueChanged)
 
     def emitDoubleValueChanged(self):
-        value = float(super(DoubleSlider, self).value())/self._multi
+        value = float(super(DoubleSlider, self).value()) / self._multi
         self.doubleValueChanged.emit(value)
 
     def value(self):

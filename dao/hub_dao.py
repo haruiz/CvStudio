@@ -1,6 +1,6 @@
 import itertools
 
-from dao import db,HubEntity,HubModelEntity,IntegrityError
+from dao import db, HubEntity, HubModelEntity, IntegrityError
 from vo import HubVO, HubModelVO
 
 
@@ -9,16 +9,16 @@ class HubDao:
         pass
 
     def _save(self, vo: HubVO):
-        hub=HubEntity.create(
+        hub = HubEntity.create(
             path=vo.path,
             author=vo.author
         )
-        id=hub.get_id()
-        data=[(m.name,id) for m in vo.models]
+        id = hub.get_id()
+        data = [(m.name, id) for m in vo.models]
         HubModelEntity \
             .insert_many(data,
-                fields=[HubModelEntity.name,
-                HubModelEntity.hub]).execute()
+                         fields=[HubModelEntity.name,
+                                 HubModelEntity.hub]).execute()
         return id
 
     @db.atomic()
@@ -34,7 +34,7 @@ class HubDao:
         return result
 
     @db.atomic()
-    def update(self,vo):
+    def update(self, vo):
         HubEntity.delete_by_id(vo.id)
         return self._save(vo)
 
@@ -42,10 +42,11 @@ class HubDao:
     def fetch_all(self):
         h = HubEntity.alias()
         hm = HubModelEntity.alias()
-        query = (hm.select(h.id.alias("repo_id"), h.path.alias("repo"), hm.name.alias("model_name")).join(h, on=(hm.hub_id == h.id)))
+        query = (hm.select(h.id.alias("repo_id"), h.path.alias("repo"), hm.name.alias("model_name")).join(h, on=(
+                    hm.hub_id == h.id)))
         cursor = query.dicts().execute()
         rows = []
-        groups=itertools.groupby(list(cursor),lambda row: (row["repo_id"], row["repo"]) )
+        groups = itertools.groupby(list(cursor), lambda row: (row["repo_id"], row["repo"]))
         for repo, models in groups:
             repo_id, repo_name = repo
             hub = HubVO()

@@ -1,11 +1,12 @@
+import torch.hub
+
 from vo import HubVO, HubModelVO
 from .hub_client import HubClient
-import torch.hub
 
 
 class PyTorchHubClient(HubClient):
     def __init__(self):
-        super(PyTorchHubClient,self).__init__()
+        super(PyTorchHubClient, self).__init__()
 
     def fetch_model(self, repo: str, *args, **kwargs):
         try:

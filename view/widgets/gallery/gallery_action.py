@@ -1,6 +1,5 @@
-
 class GalleryAction():
-    def __init__(self,icon, name, tooltip=None):
+    def __init__(self, icon, name, tooltip=None):
         self._icon = icon
         self._name = name
         self._tooltip = tooltip

@@ -1,7 +1,7 @@
 import os
-
-import torch, cv2
 import random
+
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -21,7 +21,7 @@ def crop2fullmask(crop_mask, bbox, im=None, im_size=None, zero_pad=False, relax=
                   interpolation=cv2.INTER_CUBIC, scikit=False):
     if scikit:
         from skimage.transform import resize as sk_resize
-    assert(not(im is None and im_size is None)), 'You have to provide an image or the image size'
+    assert (not (im is None and im_size is None)), 'You have to provide an image or the image size'
     if im is None:
         im_si = im_size
     else:
@@ -45,14 +45,15 @@ def crop2fullmask(crop_mask, bbox, im=None, im_size=None, zero_pad=False, relax=
         # Offsets for x and y
         offsets = (-bbox[0], -bbox[1])
     else:
-        assert((bbox == bbox_valid).all())
+        assert ((bbox == bbox_valid).all())
         offsets = (-bbox_valid[0], -bbox_valid[1])
 
     # Simple per element addition in the tuple
     inds = tuple(map(sum, zip(bbox_valid, offsets + offsets)))
 
     if scikit:
-        crop_mask = sk_resize(crop_mask, (bbox[3] - bbox[1] + 1, bbox[2] - bbox[0] + 1), order=0, mode='constant').astype(crop_mask.dtype)
+        crop_mask = sk_resize(crop_mask, (bbox[3] - bbox[1] + 1, bbox[2] - bbox[0] + 1), order=0,
+                              mode='constant').astype(crop_mask.dtype)
     else:
         crop_mask = cv2.resize(crop_mask, (bbox[2] - bbox[0] + 1, bbox[3] - bbox[1] + 1), interpolation=interpolation)
     result_ = np.zeros(im_si)
@@ -61,8 +62,8 @@ def crop2fullmask(crop_mask, bbox, im=None, im_size=None, zero_pad=False, relax=
 
     result = np.zeros(im_si)
     if mask_relax:
-        result[bbox_init[1]:bbox_init[3]+1, bbox_init[0]:bbox_init[2]+1] = \
-            result_[bbox_init[1]:bbox_init[3]+1, bbox_init[0]:bbox_init[2]+1]
+        result[bbox_init[1]:bbox_init[3] + 1, bbox_init[0]:bbox_init[2] + 1] = \
+            result_[bbox_init[1]:bbox_init[3] + 1, bbox_init[0]:bbox_init[2] + 1]
     else:
         result = result_
 
@@ -72,9 +73,9 @@ def crop2fullmask(crop_mask, bbox, im=None, im_size=None, zero_pad=False, relax=
 def overlay_mask(im, ma, colors=None, alpha=0.5):
     assert np.max(im) <= 1.0
     if colors is None:
-        colors = np.load(os.path.join(os.path.dirname(__file__), 'pascal_map.npy'))/255.
+        colors = np.load(os.path.join(os.path.dirname(__file__), 'pascal_map.npy')) / 255.
     else:
-        colors = np.append([[0.,0.,0.]], colors, axis=0);
+        colors = np.append([[0., 0., 0.]], colors, axis=0);
 
     if ma.ndim == 3:
         assert len(colors) >= ma.shape[0], 'Not enough colors'
@@ -82,11 +83,11 @@ def overlay_mask(im, ma, colors=None, alpha=0.5):
     im = im.astype(np.float32)
 
     if ma.ndim == 2:
-        fg = im * alpha+np.ones(im.shape) * (1 - alpha) * colors[1, :3]   # np.array([0,0,255])/255.0
+        fg = im * alpha + np.ones(im.shape) * (1 - alpha) * colors[1, :3]  # np.array([0,0,255])/255.0
     else:
         fg = []
         for n in range(ma.ndim):
-            fg.append(im * alpha + np.ones(im.shape) * (1 - alpha) * colors[1+n, :3])
+            fg.append(im * alpha + np.ones(im.shape) * (1 - alpha) * colors[1 + n, :3])
     # Whiten background
     bg = im.copy()
     if ma.ndim == 2:
@@ -108,9 +109,10 @@ def overlay_mask(im, ma, colors=None, alpha=0.5):
 
     return bg
 
+
 def overlay_masks(im, masks, alpha=0.5):
-    colors = np.load(os.path.join(os.path.dirname(__file__), 'pascal_map.npy'))/255.
-    
+    colors = np.load(os.path.join(os.path.dirname(__file__), 'pascal_map.npy')) / 255.
+
     if isinstance(masks, np.ndarray):
         masks = [masks]
 
@@ -122,7 +124,7 @@ def overlay_masks(im, masks, alpha=0.5):
     i = 1
     for ma in masks:
         ma = ma.astype(np.bool)
-        fg = im * alpha+np.ones(im.shape) * (1 - alpha) * colors[i, :3]   # np.array([0,0,255])/255.0
+        fg = im * alpha + np.ones(im.shape) * (1 - alpha) * colors[i, :3]  # np.array([0,0,255])/255.0
         i = i + 1
         ov[ma == 1] = fg[ma == 1]
         total_ma += ma
@@ -144,10 +146,10 @@ def extreme_points(mask, pert):
     inds_y, inds_x = np.where(mask > 0.5)
 
     # Find extreme points
-    return np.array([find_point(inds_x, inds_y, np.where(inds_x <= np.min(inds_x)+pert)), # left
-                     find_point(inds_x, inds_y, np.where(inds_x >= np.max(inds_x)-pert)), # right
-                     find_point(inds_x, inds_y, np.where(inds_y <= np.min(inds_y)+pert)), # top
-                     find_point(inds_x, inds_y, np.where(inds_y >= np.max(inds_y)-pert)) # bottom
+    return np.array([find_point(inds_x, inds_y, np.where(inds_x <= np.min(inds_x) + pert)),  # left
+                     find_point(inds_x, inds_y, np.where(inds_x >= np.max(inds_x) - pert)),  # right
+                     find_point(inds_x, inds_y, np.where(inds_y <= np.min(inds_y) + pert)),  # top
+                     find_point(inds_x, inds_y, np.where(inds_y >= np.max(inds_y) - pert))  # bottom
                      ])
 
 
@@ -197,7 +199,7 @@ def crop_from_bbox(img, bbox, zero_pad=False):
         offsets = (-bbox[0], -bbox[1])
 
     else:
-        assert(bbox == bbox_valid)
+        assert (bbox == bbox_valid)
         crop = np.zeros((bbox_valid[3] - bbox_valid[1] + 1, bbox_valid[2] - bbox_valid[0] + 1), dtype=img.dtype)
         offsets = (-bbox_valid[0], -bbox_valid[1])
 
@@ -217,7 +219,6 @@ def crop_from_bbox(img, bbox, zero_pad=False):
 
 
 def fixed_resize(sample, resolution, flagval=None):
-
     if flagval is None:
         if ((sample == 0) | (sample == 1)).all():
             flagval = cv2.INTER_NEAREST
@@ -226,7 +227,8 @@ def fixed_resize(sample, resolution, flagval=None):
 
     if isinstance(resolution, int):
         tmp = [resolution, resolution]
-        tmp[np.argmax(sample.shape[:2])] = int(round(float(resolution)/np.min(sample.shape[:2])*np.max(sample.shape[:2])))
+        tmp[np.argmax(sample.shape[:2])] = int(
+            round(float(resolution) / np.min(sample.shape[:2]) * np.max(sample.shape[:2])))
         resolution = tuple(tmp)
 
     if sample.ndim == 2 or (sample.ndim == 3 and sample.shape[2] == 3):
@@ -243,7 +245,7 @@ def crop_from_mask(img, mask, relax=0, zero_pad=False):
     if mask.shape[:2] != img.shape[:2]:
         mask = cv2.resize(mask, dsize=tuple(reversed(img.shape[:2])), interpolation=cv2.INTER_NEAREST)
 
-    assert(mask.shape[:2] == img.shape[:2])
+    assert (mask.shape[:2] == img.shape[:2])
 
     bbox = get_bbox(mask, pad=relax, zero_pad=zero_pad)
 
@@ -284,7 +286,7 @@ def make_gt(img, labels, sigma=10, one_mask_per_point=False):
     """
     h, w = img.shape[:2]
     if labels is None:
-        gt = make_gaussian((h, w), center=(h//2, w//2), sigma=sigma)
+        gt = make_gaussian((h, w), center=(h // 2, w // 2), sigma=sigma)
     else:
         labels = np.array(labels)
         if labels.ndim == 1:
@@ -307,15 +309,16 @@ def cstm_normalize(im, max_value):
     """
     Normalize image to range 0 - max_value
     """
-    imn = max_value*(im - im.min()) / max((im.max() - im.min()), 1e-8)
+    imn = max_value * (im - im.min()) / max((im.max() - im.min()), 1e-8)
     return imn
 
 
 def generate_param_report(logfile, param):
     log_file = open(logfile, 'w')
     for key, val in param.items():
-        log_file.write(key+':'+str(val)+'\n')
+        log_file.write(key + ':' + str(val) + '\n')
     log_file.close()
+
 
 def color_map(N=256, normalized=False):
     def bitget(byteval, idx):
@@ -327,14 +330,14 @@ def color_map(N=256, normalized=False):
         r = g = b = 0
         c = i
         for j in range(8):
-            r = r | (bitget(c, 0) << 7-j)
-            g = g | (bitget(c, 1) << 7-j)
-            b = b | (bitget(c, 2) << 7-j)
+            r = r | (bitget(c, 0) << 7 - j)
+            g = g | (bitget(c, 1) << 7 - j)
+            b = b | (bitget(c, 2) << 7 - j)
             c = c >> 3
 
         cmap[i] = np.array([r, g, b])
 
-    cmap = cmap/255 if normalized else cmap
+    cmap = cmap / 255 if normalized else cmap
     return cmap
 
 

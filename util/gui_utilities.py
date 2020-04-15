@@ -2,10 +2,10 @@ import os
 import typing
 
 import numpy as np
-
 from PyQt5.QtGui import QIcon, QPixmap, QImage, qRgb
-from PyQt5.QtWidgets import QLayout,QGridLayout,QLayoutItem,QMessageBox,QApplication,QMainWindow,QVBoxLayout,QGroupBox, \
-    QFileDialog,QDialog,QAbstractItemView,QListView,QTreeView
+from PyQt5.QtWidgets import QLayout, QGridLayout, QLayoutItem, QMessageBox, QApplication, QMainWindow, QVBoxLayout, \
+    QGroupBox, \
+    QFileDialog, QDialog, QAbstractItemView, QListView, QTreeView
 
 
 class GUIUtilities:
@@ -21,10 +21,10 @@ class GUIUtilities:
 
     @staticmethod
     def get_image(img):
-        app=QApplication.instance()
-        curr_theme="light"
+        app = QApplication.instance()
+        curr_theme = "light"
         if app:
-            curr_theme=app.property("theme")
+            curr_theme = app.property("theme")
         resource_path = os.path.abspath("./assets/icons/{}/{}".format(curr_theme, img))
         return QPixmap(resource_path)
 
@@ -91,48 +91,50 @@ class GUIUtilities:
         return None
 
     @staticmethod
-    def wrap_with_groupbox(widget,widget_title):
-        groupbox=QGroupBox()
+    def wrap_with_groupbox(widget, widget_title):
+        groupbox = QGroupBox()
         groupbox.setTitle(widget_title)
-        vlayout=QVBoxLayout()
+        vlayout = QVBoxLayout()
         vlayout.addWidget(widget)
         groupbox.setLayout(vlayout)
         return groupbox
 
     @staticmethod
     def select_folders():
-        file_dialog=QFileDialog()
+        file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.DirectoryOnly)
-        file_dialog.setOption(QFileDialog.DontUseNativeDialog,True)
-        file_view=file_dialog.findChild(QListView,'listView')
+        file_dialog.setOption(QFileDialog.DontUseNativeDialog, True)
+        file_view = file_dialog.findChild(QListView, 'listView')
         if file_view:
             file_view.setSelectionMode(QAbstractItemView.MultiSelection)
-        f_tree_view=file_dialog.findChild(QTreeView)
+        f_tree_view = file_dialog.findChild(QTreeView)
         if f_tree_view:
             f_tree_view.setSelectionMode(QAbstractItemView.MultiSelection)
-        paths=[]
+        paths = []
         if file_dialog.exec() == QDialog.Accepted:
-            paths=file_dialog.selectedFiles()
+            paths = file_dialog.selectedFiles()
         return paths
 
     @staticmethod
-    def select_folder(parent=None,title="select the folder"):
-        return str(QFileDialog.getExistingDirectory(None,title))
+    def select_folder(parent=None, title="select the folder"):
+        return str(QFileDialog.getExistingDirectory(None, title))
 
     @staticmethod
-    def select_file(ext,title="select the file",parent=None):
-        options=QFileDialog.Options()
-        options|=QFileDialog.DontUseNativeDialog
-        ext="{} Files (*{})".format(ext,ext) if isinstance(ext,str) else ";;".join(
-            list(map(lambda e: "{} Files (*.{})".format(e,e),ext)))
-        path,_=QFileDialog.getOpenFileName(parent,title,os.path.join(os.path.expanduser('~')),ext,options=options)
+    def select_file(ext, title="select the file", parent=None):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        ext = "{} Files (*{})".format(ext, ext) if isinstance(ext, str) else ";;".join(
+            list(map(lambda e: "{} Files (*.{})".format(e, e), ext)))
+        path, _ = QFileDialog.getOpenFileName(parent, title, os.path.join(os.path.expanduser('~')), ext,
+                                              options=options)
         return path
 
     @staticmethod
-    def select_files(ext,title="select the file",parent=None):
-        options=QFileDialog.Options()
-        options|=QFileDialog.DontUseNativeDialog
-        ext="{} Files (*{})".format(ext,ext) if isinstance(ext,str) else ";;".join(
-            list(map(lambda e: "{} Files (*.{})".format(e,e),ext)))
-        files,_=QFileDialog.getOpenFileNames(parent,title,os.path.join(os.path.expanduser('~')),ext,options=options)
+    def select_files(ext, title="select the file", parent=None):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        ext = "{} Files (*{})".format(ext, ext) if isinstance(ext, str) else ";;".join(
+            list(map(lambda e: "{} Files (*.{})".format(e, e), ext)))
+        files, _ = QFileDialog.getOpenFileNames(parent, title, os.path.join(os.path.expanduser('~')), ext,
+                                                options=options)
         return files

@@ -1,17 +1,16 @@
-import math
-
-from PyQt5 import QtCore,QtGui
-from PyQt5.QtCore import QSize,QObject,pyqtSignal
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QSize, QObject, pyqtSignal
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QPushButton,QGraphicsDropShadowEffect
+from PyQt5.QtWidgets import QPushButton, QGraphicsDropShadowEffect
 
 
 class ImageButton(QPushButton, QObject):
     doubleClicked = pyqtSignal(QtGui.QMouseEvent)
-    def __init__(self,icon: QIcon = QIcon(), size: QSize=QSize(64,64), tag=None, parent=None):
+
+    def __init__(self, icon: QIcon = QIcon(), size: QSize = QSize(64, 64), tag=None, parent=None):
         super(ImageButton, self).__init__(parent)
         self.setIcon(icon)
-        self.setContentsMargins(10,10,10,20)
+        self.setContentsMargins(10, 10, 10, 20)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self._size = size
         self._effect = self.graphicsEffect()
@@ -30,11 +29,11 @@ class ImageButton(QPushButton, QObject):
         self._tag = value
 
     def enterEvent(self, evt: QtCore.QEvent) -> None:
-        #self.setIconSize(QSize(math.floor(self._size.width() * 1.2),math.floor(self._size.height() * 1.2)))
-        shadow=QGraphicsDropShadowEffect(self)
+        # self.setIconSize(QSize(math.floor(self._size.width() * 1.2),math.floor(self._size.height() * 1.2)))
+        shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(8)
-        #shadow.setColor(QtGui.QColor(76,35,45).lighter())
-        shadow.setColor(QtGui.QColor(76,35,45).lighter())
+        # shadow.setColor(QtGui.QColor(76,35,45).lighter())
+        shadow.setColor(QtGui.QColor(76, 35, 45).lighter())
         shadow.setOffset(4)
         self.setGraphicsEffect(shadow)
         super(ImageButton, self).enterEvent(evt)
@@ -46,8 +45,3 @@ class ImageButton(QPushButton, QObject):
 
     def mouseDoubleClickEvent(self, evt: QtGui.QMouseEvent) -> None:
         self.doubleClicked.emit(evt)
-
-
-
-
-

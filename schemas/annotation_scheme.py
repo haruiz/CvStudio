@@ -46,7 +46,3 @@ class AnnotSchemeVO:
     @label_color.setter
     def label_color(self, value):
         self._label_color = value
-
-
-
-

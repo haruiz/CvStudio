@@ -63,4 +63,5 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.tab_widget_manager.setTabText(self.tab_widget_manager.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
-        self.tab_widget_manager.setTabText(self.tab_widget_manager.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
+        self.tab_widget_manager.setTabText(self.tab_widget_manager.indexOf(self.tab_2),
+                                           _translate("MainWindow", "Tab 2"))

@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QDialog
+
 from util import GUIUtilities
 from .base_repo_form import Ui_NewRepo
+
 
 class NewRepoForm(QDialog, Ui_NewRepo):
     def __init__(self, parent=None):

@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 
 class Ui_Image_Viewer_Widget(object):
@@ -159,5 +159,6 @@ class Ui_Image_Viewer_Widget(object):
         Image_Viewer_Widget.setWindowTitle(_translate("Image_Viewer_Widget", "Form"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("Image_Viewer_Widget", "Labels"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("Image_Viewer_Widget", "Hub"))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.img_adjust_page), _translate("Image_Viewer_Widget", "Image Adjustment"))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.img_adjust_page),
+                                 _translate("Image_Viewer_Widget", "Image Adjustment"))
         self.toolBox.setItemText(self.toolBox.indexOf(self.page_4), _translate("Image_Viewer_Widget", "Images"))

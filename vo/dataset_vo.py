@@ -19,7 +19,6 @@ class DatasetVO:
         else:
             self._count = 0
 
-
     @property
     def size(self):
         return self._size

@@ -1,10 +1,10 @@
 * {
-   font-family: "Roboto";
+    font-family: "Roboto";
     font-size: 12px;
 }
 
 QLabel {
-    color : darkgray;
+    color: darkgray;
 }
 
 QToolTip {

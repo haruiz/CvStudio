@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 class ApiClient(metaclass=ABCMeta):
     @abstractmethod
-    def list_models(self, *args,**kwargs):
+    def list_models(self, *args, **kwargs):
         raise NotImplementedError
 
     @abstractmethod

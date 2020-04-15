@@ -1,8 +1,9 @@
 import json
-import subprocess as sp
 import os
-import cv2
+import subprocess as sp
 from tempfile import NamedTemporaryFile
+
+import cv2
 
 
 class VideoUtilities:

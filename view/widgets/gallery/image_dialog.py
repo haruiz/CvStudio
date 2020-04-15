@@ -1,6 +1,6 @@
 from PyQt5 import QtCore
-from PyQt5.QtGui import QMouseEvent,QPainter,QWheelEvent,QPixmap
-from PyQt5.QtWidgets import QVBoxLayout,QFrame,QDialog,QWidget,QGraphicsView,QGraphicsScene,QGraphicsPixmapItem
+from PyQt5.QtGui import QMouseEvent, QPainter, QWheelEvent, QPixmap
+from PyQt5.QtWidgets import QVBoxLayout, QFrame, QDialog, QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
 
 class ImageDialogViewer(QGraphicsView):
@@ -12,9 +12,9 @@ class ImageDialogViewer(QGraphicsView):
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self._scene=QGraphicsScene(self)
+        self._scene = QGraphicsScene(self)
         self.setScene(self._scene)
-        self._pixmap=None
+        self._pixmap = None
 
     @property
     def pixmap(self):
@@ -23,35 +23,33 @@ class ImageDialogViewer(QGraphicsView):
     @pixmap.setter
     def pixmap(self, value: QPixmap):
         self._pixmap = value
-        self._pixmap=QGraphicsPixmapItem()
+        self._pixmap = QGraphicsPixmapItem()
         self._pixmap.setPixmap(value)
-        size=300
+        size = 300
         w = value.width()
         h = value.height()
-        scale=size/w
-        new_w,new_h=w*scale,h*scale
-        self._pixmap.setOffset(-value.width()/2,-value.height()/2)
+        scale = size / w
+        new_w, new_h = w * scale, h * scale
+        self._pixmap.setOffset(-value.width() / 2, -value.height() / 2)
         self._pixmap.setTransformationMode(QtCore.Qt.SmoothTransformation)
         self._scene.addItem(self._pixmap)
         self.scale(scale, scale)
 
-    def wheelEvent(self,event: QWheelEvent):
-        adj=(event.angleDelta().y()/120)*0.1
-        self.scale(1+adj,1+adj)
-
-
+    def wheelEvent(self, event: QWheelEvent):
+        adj = (event.angleDelta().y() / 120) * 0.1
+        self.scale(1 + adj, 1 + adj)
 
 
 class ImageDialog(QDialog):
-    def __init__(self,image_path,  parent=None):
-        super(ImageDialog,self).__init__(parent)
-        position=self.cursor().pos()
+    def __init__(self, image_path, parent=None):
+        super(ImageDialog, self).__init__(parent)
+        position = self.cursor().pos()
         position.setX(position.x())
         position.setY(position.y())
         self.move(position)
-        #self.setWindowOpacity(0.8)
+        # self.setWindowOpacity(0.8)
         self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0,0,0,0)
+        self.layout().setContentsMargins(0, 0, 0, 0)
         self.widget = QFrame()
         self.widget.setStyleSheet('''
             QFrame{
@@ -62,7 +60,7 @@ class ImageDialog(QDialog):
         ''')
 
         self.widget.setLayout(QVBoxLayout())
-        self.widget.layout().setContentsMargins(0,0,0,0)
+        self.widget.layout().setContentsMargins(0, 0, 0, 0)
         self.setMouseTracking(True)
         self.setWindowFlags(QtCore.Qt.Popup | QtCore.Qt.WindowStaysOnTopHint
                             | QtCore.Qt.FramelessWindowHint
@@ -80,6 +78,7 @@ class ImageDialog(QDialog):
                 except:
                     pass
                 set_mouse_tracking(child)
+
         QWidget.setMouseTracking(self, flag)
         set_mouse_tracking(self)
 
