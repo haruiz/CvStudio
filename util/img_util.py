@@ -1,19 +1,18 @@
-import kornia
 import inspect
 import cv2
 import numpy as np
 
 class ImageUtilities:
-    @staticmethod
-    def color_functions(backend="kornia"):
-        if backend == "kornia":
-            return {fname: fpy for fname, fpy in
-                    inspect.getmembers(kornia.color,inspect.isfunction)
-                        if fname.split("_")[0] == "rgb" and fname is not "rgb_to_rgba"}
-        else:
-            #i for i in dir(cv2) if i.startswith('COLOR_')
-            return {k:v for k,v in  vars(cv2).items()
-                        if k.startswith("COLOR_RGB2")}
+    # @staticmethod
+    # def color_functions(backend="kornia"):
+    #     if backend == "kornia":
+    #         return {fname: fpy for fname, fpy in
+    #                 inspect.getmembers(kornia.color,inspect.isfunction)
+    #                     if fname.split("_")[0] == "rgb" and fname is not "rgb_to_rgba"}
+    #     else:
+    #         #i for i in dir(cv2) if i.startswith('COLOR_')
+    #         return {k:v for k,v in  vars(cv2).items()
+    #                     if k.startswith("COLOR_RGB2")}
 
     @staticmethod
     def adjust_brightness(src: np.ndarray, brightness_factor):
@@ -84,5 +83,3 @@ class ImageUtilities:
     def adjust_image(src, contrast, brightness)-> np.ndarray:
         return np.clip(cv2.addWeighted(src, contrast, np.zeros_like(src),0,  brightness - 50),0,255)
 
-if __name__ == '__main__':
-    print(ImageUtilities.color_functions(backend="cv2"))

@@ -68,8 +68,7 @@ CVStudio supports:
     pip install peewee
     pip install -U marshmallow
     pip install hurry.filesize
-    pip install Mako
-    pip install kornia
+    pip install Mako    
     ```
     
   * Install [PyTorch](https://pytorch.org/) with conda following the [instructions](https://pytorch.org/get-started/locally/)
@@ -77,11 +76,11 @@ CVStudio supports:
     
     - Using GPU:<br>
     ```console
-        conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly
+        conda install pytorch torchvision cudatoolkit=10.0 -c pytorch-nightly        
     ```
     - Using CPU:<br>
     ```console
-        conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge
+        conda install pytorch torchvision cpuonly -c pytorch-nightly -c defaults -c conda-forge        
     ```
 
 ### 2. Download models
