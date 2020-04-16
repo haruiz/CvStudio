@@ -207,6 +207,7 @@ class DatasetTabWidget(QScrollArea):
         masks_menu = QMenu("masks")
         menu.addMenu(masks_menu)
 
+
         # labels menu actions
         labels_menu_export2csv_action = labels_menu.addAction(".csv")
         labels_menu_export2json_action = labels_menu.addAction(".json")
@@ -224,6 +225,8 @@ class DatasetTabWidget(QScrollArea):
         #polygons_menu_export2csv_action = masks_menu.addAction(".csv (cv-studio)")
         polygons_menu_export2json_action = masks_menu.addAction(".json (cv-studio)")
         polygons_menu_export2png_action = masks_menu.addAction(".png")
+
+        export_all_action = menu.addAction("all")
 
         action = menu.exec_(QCursor.pos())
         if action:
@@ -247,6 +250,10 @@ class DatasetTabWidget(QScrollArea):
                 self.export_polygons_annots(vo, "json")
             elif action == polygons_menu_export2png_action:
                 self.export_polygons_annots2png(vo)
+
+            elif action == export_all_action:
+                self.export_all_annot(vo)
+
 
     @gui_exception
     def import_annot_action_slot(self, dataset_vo: DatasetVO):
@@ -596,6 +603,41 @@ class DatasetTabWidget(QScrollArea):
                     GUIUtilities.show_info_message("Annotations exported successfully", "Done")
                 else:
                     GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),"Done")
+
+            worker = Worker(do_work)
+            worker.signals.result.connect(done_work)
+            self.thread_pool.start(worker)
+
+    @gui_exception
+    def export_all_annot(self,dataset_vo: DatasetVO ):
+        selected_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
+        if selected_folder:
+            @work_exception
+            def do_work():
+                annotations = self._annot_dao.fetch_all_by_dataset(dataset_vo.id)
+                return annotations, None
+
+            @gui_exception
+            def done_work(result):
+                annots, err = result
+                if err:
+                    raise err
+                if annots:
+                    output_file = Path(selected_folder) \
+                        .joinpath("annotations.json")
+                    def dumper(obj):
+                        try:
+                            return obj.toJSON()
+                        except:
+                            return obj.__dict__
+
+                    with open(output_file, "w") as f:
+                        f.write(json.dumps(annots, default=dumper, indent=2))
+
+                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
+                else:
+                    GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),
+                                                   "Done")
 
             worker = Worker(do_work)
             worker.signals.result.connect(done_work)

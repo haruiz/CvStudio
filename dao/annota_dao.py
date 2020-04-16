@@ -167,7 +167,6 @@ class AnnotaDao:
         return result
 
 
-
     @db.connection_context()
     def fetch_labels(self, dataset_id: int = None):
         e = DatasetEntryEntity.alias("e")
