@@ -1,10 +1,10 @@
 import itertools
-import json
 import os
 import random
 import xml.etree.ElementTree as ET
+from pathlib import Path
+import json
 
-import cv2
 import dask
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QSize, QObject, pyqtSignal
@@ -24,7 +24,8 @@ from .loading_dialog import QLoadingDialog
 from .response_grid import GridCard
 from .response_grid import ResponseGridLayout
 from .tab_media import MediaTabWidget
-
+import pandas as pd
+from PIL import Image
 
 class DatasetGridWidget(QWidget, QObject):
     new_dataset_action_signal = pyqtSignal()
@@ -193,146 +194,57 @@ class DatasetTabWidget(QScrollArea):
         index = tab_widget_manager.addTab(tab_widget, vo.name)
         tab_widget_manager.setCurrentIndex(index)
 
-    def annotations2json(self, images, selected_folder):
-        def export_template(img_path, img_annotations):
-            str_template = '''
-            {
-              "path": "${path}",
-              "regions": [
-                % for i, region in enumerate(annotations):
-                    {
-                        "kind": "${region["annot_kind"]}",
-                        "points": "${region["annot_points"]}",
-                        "label": "${region["label_name"]}",
-                        "color": "${region["label_color"]}"
-                    } 
-                    % if i < len(annotations) - 1:
-                    ,
-                    % endif
-                % endfor
-              ]
-            }
-            '''
-            json_str = Template(str_template).render(path=img_path, annotations=list(img_annotations))
-            filename = os.path.split(img_path)[1]
-            file_name, _ = os.path.splitext(filename)
-            output_file = os.path.join(selected_folder, "{}.json".format(file_name))
-            with open(output_file, 'w') as f:
-                json.dump(json.loads(json_str), f, indent=3)
 
-        delayed_tasks = []
-        for img_path, img_annotations in images:
-            delayed_tasks.append(dask.delayed(export_template)(img_path, img_annotations))
-        dask.compute(*delayed_tasks)
-
-    def annotations2pascal(self, images, selected_folder):
-        def export_template(img_path, img_annotations):
-            str_template = '''
-            <annotation>
-                <folder>${folder}</folder>
-                <filename>${filename}</filename>
-                <path>${path}</path>
-                <source>
-                    <database>Unknown</database>
-                </source>
-                <size>
-                    <width>${width}</width>
-                    <height>${height}</height>
-                    <depth>${depth}</depth>
-                </size>
-                <segmented>0</segmented>
-                % for i, region in enumerate(annotations):
-                    <object>
-                        <name>${region["name"]}</name>
-                        <pose>Unspecified</pose>
-                        <truncated>0</truncated>
-                        <difficult>0</difficult>
-                        <bndbox>
-                            <xmin>${region["xmin"]}</xmin>
-                            <ymin>${region["ymin"]}</ymin>
-                            <xmax>${region["xmax"]}</xmax>
-                            <ymax>${region["ymax"]}</ymax>
-                        </bndbox>
-                    </object>
-                % endfor
-            </annotation>
-            '''
-            filename = os.path.split(img_path)[1]
-            folder = os.path.split(os.path.dirname(img_path))[1]
-            h, w, c = cv2.imread(img_path).shape
-
-            xml_str = Template(str_template).render(
-                path=img_path,
-                folder=folder,
-                filename=filename,
-                width=w,
-                height=h,
-                depth=c,
-                annotations=img_annotations)
-
-            file_name, _ = os.path.splitext(filename)
-            output_file = os.path.join(selected_folder, "{}.xml".format(file_name))
-            with open(output_file, 'w') as f:
-                f.write(xml_str)
-
-        delayed_tasks = []
-        for img_path, img_annotations in images:
-            boxes = []
-            for annot in img_annotations:
-                if annot["label_name"] is None or annot["label_name"] == "None":
-                    continue
-                if annot["annot_kind"] == "box":
-                    points = list(map(int, annot["annot_points"].split(",")))
-                    box = dict()
-                    box["name"] = annot["label_name"]
-                    box["xmin"] = points[0]
-                    box["ymin"] = points[1]
-                    box["xmax"] = points[2]
-                    box["ymax"] = points[3]
-                    boxes.append(box)
-            if len(boxes) > 0:
-                delayed_tasks.append(dask.delayed(export_template)(img_path, boxes))
-        dask.compute(*delayed_tasks)
-
-    def annotations2Yolo(self, images, selected_folder):
-        pass
 
     @gui_exception
     def download_annot_action_slot(self, vo: DatasetVO):
         menu = QMenu()
         menu.setCursor(QtCore.Qt.PointingHandCursor)
-        menu.addAction(self.JSON)
-        menu.addAction(self.PASCAL_VOC)
-        # menu.addAction(self.TENSORFLOW_OBJECT_DETECTION)
-        # menu.addAction(self.YOLO)
+        labels_menu = QMenu("labels")
+        menu.addMenu(labels_menu)
+        boxes_menu = QMenu("boxes")
+        menu.addMenu(boxes_menu)
+        masks_menu = QMenu("masks")
+        menu.addMenu(masks_menu)
+
+        # labels menu actions
+        labels_menu_export2csv_action = labels_menu.addAction(".csv")
+        labels_menu_export2json_action = labels_menu.addAction(".json")
+
+        #  boxes menu actions
+        #boxes_menu_export2csv_action = boxes_menu.addAction(".csv (cv-studio)")
+        boxes_menu_export2json_action = boxes_menu.addAction(".json (cv-studio)")
+        boxes_menu_export2pascal_action = boxes_menu.addAction(".xml (pascal voc)")
+        # boxes_menu.addSeparator()
+        #boxes_menu.addAction(".xml (pascal voc)")
+        # boxes_menu.addAction(".json (COCO)")
+        # boxes_menu.addAction(".txt (YOLO)")
+
+        # masks menu actions
+        #polygons_menu_export2csv_action = masks_menu.addAction(".csv (cv-studio)")
+        polygons_menu_export2json_action = masks_menu.addAction(".json (cv-studio)")
+        #masks_menu.addAction(".png")
+
         action = menu.exec_(QCursor.pos())
         if action:
+            # labels menu actions
+            if action == labels_menu_export2csv_action:
+                self.export_labels_annots(vo, "csv")
+            elif action == labels_menu_export2json_action:
+                self.export_labels_annots(vo, "json")
 
-            selected_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
-            if selected_folder:
-                action_text = action.text()
-
-                @work_exception
-                def do_work():
-                    results = self._annot_dao.fetch_all_by_dataset(vo.id)
-                    return results, None
-
-                @gui_exception
-                def done_work(result):
-                    data, error = result
-                    if error:
-                        raise error
-                    images = itertools.groupby(data, lambda x: x["image"])
-                    if action_text == self.JSON:
-                        self.annotations2json(images, selected_folder)
-                    elif action_text == self.PASCAL_VOC:
-                        self.annotations2pascal(images, selected_folder)
-
-                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
-
-                worker = Worker(do_work)
-                worker.signals.result.connect(done_work)
-                self.thread_pool.start(worker)
+            # boxes menu actions
+            # elif action == boxes_menu_export2csv_action:
+            #     self.export_boxes_annots(vo, "csv")
+            elif action == boxes_menu_export2json_action:
+                self.export_boxes_annots(vo, "json")
+            elif action == boxes_menu_export2pascal_action:
+                self.export_boxes_annots2pascal(vo, "pascal")
+            # masks menu actions
+            # elif action == polygons_menu_export2csv_action:
+            #     self.export_polygons_annots(vo, "csv")
+            elif action == polygons_menu_export2json_action:
+                self.export_polygons_annots(vo, "json")
 
     @gui_exception
     def import_annot_action_slot(self, dataset_vo: DatasetVO):
@@ -397,3 +309,220 @@ class DatasetTabWidget(QScrollArea):
                     worker = Worker(do_work)
                     worker.signals.result.connect(done_work)
                     self.thread_pool.start(worker)
+
+    @gui_exception
+    def export_labels_annots(self,dataset_vo: DatasetVO, export_format):
+
+        selected_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
+        if selected_folder:
+            @work_exception
+            def do_work():
+                annotations = self._annot_dao.fetch_labels(dataset_vo.id)
+                return annotations, None
+
+            @gui_exception
+            def done_work(result):
+                annots, err = result
+                if err:
+                    raise err
+                if annots:
+                    output_file = Path(selected_folder)\
+                        .joinpath("annotations.{}".format(export_format))
+                    if export_format == "csv":
+                        df = pd.DataFrame(annots)
+                        df.to_csv(str(output_file),
+                                  index=False)
+                    else:
+                        def dumper(obj):
+                            try:
+                                return obj.toJSON()
+                            except:
+                                return obj.__dict__
+                        with open(output_file, "w") as f:
+                            f.write(json.dumps(annots, default=dumper, indent=2))
+
+                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
+                else:
+                    GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),"Done")
+
+            worker = Worker(do_work)
+            worker.signals.result.connect(done_work)
+            self.thread_pool.start(worker)
+
+    @gui_exception
+    def export_boxes_annots(self, dataset_vo: DatasetVO, export_format):
+
+        selected_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
+        if selected_folder:
+            @work_exception
+            def do_work():
+                annotations = self._annot_dao.fetch_boxes(dataset_vo.id)
+                return annotations, None
+
+            @gui_exception
+            def done_work(result):
+                annots, err = result
+                if err:
+                    raise err
+                if annots:
+                    output_file = Path(selected_folder) \
+                        .joinpath("annotations.{}".format(export_format))
+                    if export_format == "csv":
+                        df = pd.DataFrame(annots)
+                        df.to_csv(str(output_file),
+                                  index=False)
+                    else:
+                        def dumper(obj):
+                            try:
+                                return obj.toJSON()
+                            except:
+                                return obj.__dict__
+
+                        with open(output_file, "w") as f:
+                            f.write(json.dumps(annots, default=dumper, indent=2))
+                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
+                else:
+                    GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name), "Done")
+
+            worker = Worker(do_work)
+            worker.signals.result.connect(done_work)
+            self.thread_pool.start(worker)
+
+    @gui_exception
+    def export_polygons_annots(self, dataset_vo: DatasetVO, export_format):
+
+        selected_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
+        if selected_folder:
+            @work_exception
+            def do_work():
+                annotations = self._annot_dao.fetch_polygons(dataset_vo.id)
+                return annotations, None
+
+            @gui_exception
+            def done_work(result):
+                annots, err = result
+                if err:
+                    raise err
+                if annots:
+                    output_file = Path(selected_folder) \
+                        .joinpath("annotations.{}".format(export_format))
+                    if export_format == "csv":
+                        df = pd.DataFrame(annots)
+                        df.to_csv(str(output_file),
+                                  index=False)
+                    else:
+                        def dumper(obj):
+                            try:
+                                return obj.toJSON()
+                            except:
+                                return obj.__dict__
+
+                        with open(output_file, "w") as f:
+                            f.write(json.dumps(annots, default=dumper, indent=2))
+                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
+                else:
+                    GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),
+                                                   "Done")
+
+            worker = Worker(do_work)
+            worker.signals.result.connect(done_work)
+            self.thread_pool.start(worker)
+
+    @gui_exception
+    def export_boxes_annots2pascal(self, dataset_vo: DatasetVO, export_format):
+
+        output_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
+        if output_folder:
+            output_folder = Path(output_folder)
+
+            @dask.delayed
+            def export_xml(img_path, img_annotations):
+                str_template = '''
+                   <annotation>
+                       <folder>${folder}</folder>
+                       <filename>${filename}</filename>
+                       <path>${path}</path>
+                       <source>
+                           <database>Unknown</database>
+                       </source>
+                       <size>
+                           <width>${width}</width>
+                           <height>${height}</height>
+                           <depth>${depth}</depth>
+                       </size>
+                       <segmented>0</segmented>
+                       % for i, region in enumerate(annotations):
+                           <object>
+                               <name>${region["name"]}</name>
+                               <pose>Unspecified</pose>
+                               <truncated>0</truncated>
+                               <difficult>0</difficult>
+                               <bndbox>
+                                   <xmin>${region["xmin"]}</xmin>
+                                   <ymin>${region["ymin"]}</ymin>
+                                   <xmax>${region["xmax"]}</xmax>
+                                   <ymax>${region["ymax"]}</ymax>
+                               </bndbox>
+                           </object>
+                       % endfor
+                   </annotation>
+                   '''
+                img_path = Path(img_path)
+                img_name = img_path.name
+                img_stem = img_path.stem
+                img: Image = Image.open(str(img_path))
+                w, h = img.size
+                c = len(img.getbands())
+
+                xml_str = Template(str_template).render(
+                    path=img_path,
+                    folder=str(img_path.parent),
+                    filename=img_name,
+                    width=w,
+                    height=h,
+                    depth=c,
+                    annotations=img_annotations)
+
+                output_file = output_folder.joinpath("{}.xml".format(img_stem))
+                with open(output_file, 'w') as f:
+                    f.write(xml_str)
+
+
+            @work_exception
+            def do_work():
+                annotations = self._annot_dao.fetch_boxes(dataset_vo.id)
+                if annotations:
+                    images = sorted(annotations, key=lambda ann: ann["image"])
+                    images = itertools.groupby(images, key=lambda ann: ann["image"])
+                    delayed_tasks = []
+                    for img_path, img_annotations in images:
+                        boxes = []
+                        for annot in img_annotations:
+                            points = list(map(int, annot["annot_points"].split(",")))
+                            box = dict()
+                            box["name"] = annot["label_name"]
+                            box["xmin"] = points[0]
+                            box["ymin"] = points[1]
+                            box["xmax"] = points[2]
+                            box["ymax"] = points[3]
+                            boxes.append(box)
+                        if len(boxes) > 0:
+                            delayed_tasks.append(export_xml(img_path, boxes))
+                    dask.compute(*delayed_tasks)
+                    return True, None
+                else:
+                    return False, None
+
+            @gui_exception
+            def done_work(result):
+                success, err = result
+                if err:
+                    raise err
+                if success:
+                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
+                else:
+                    GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),"Done")
+
+            worker = Worker(do_work)
+            worker.signals.result.connect(done_work)
+            self.thread_pool.start(worker)

@@ -101,7 +101,6 @@ class AnnotaDao:
         ann = AnnotationEntity.alias("a")
         ds_entry = DatasetEntryEntity.alias("i")
         lbl = LabelEntity.alias("l")
-
         query = (
             ann.select(
                 ds_entry.file_path.alias("image"),
@@ -122,22 +121,64 @@ class AnnotaDao:
         return result
 
     @db.connection_context()
-    def fetch_all_by_dataset(self, dataset_id: int = None):
-        a = AnnotationEntity.alias("a")
-        i = DatasetEntryEntity.alias("i")
-        l = LabelEntity.alias("l")
-
+    def fetch_boxes(self, dataset_id: int = None):
+        ann = AnnotationEntity.alias("a")
+        ds_entry = DatasetEntryEntity.alias("i")
+        lbl = LabelEntity.alias("l")
         query = (
-            a.select(
-                i.file_path.alias("image"),
-                a.kind.alias("annot_kind"),
-                a.points.alias("annot_points"),
-                l.name.alias("label_name"),
-                l.color.alias("label_color")
+            ann.select(
+                ds_entry.file_path.alias("image"),
+                ann.kind.alias("annot_kind"),
+                ann.points.alias("annot_points"),
+                lbl.name.alias("label_name"),
+                lbl.color.alias("label_color")
             )
-                .join(i, on=(a.entry == i.id))
-                .join(l, on=(a.label == l.id), join_type=JOIN.LEFT_OUTER)
-                .where(i.dataset == dataset_id)
+                .join(ds_entry, on=(ann.entry == ds_entry.id))
+                .join(lbl, on=(ann.label == lbl.id), join_type=JOIN.LEFT_OUTER)
+                .where((ann.label.is_null(False)) & (ds_entry.dataset == dataset_id) & (ann.kind == "box"))
+        )
+        cursor = query.dicts().execute()
+        result = []
+        for row in cursor:
+            result.append(row)
+        return result
+
+    @db.connection_context()
+    def fetch_polygons(self, dataset_id: int = None):
+        ann = AnnotationEntity.alias("a")
+        ds_entry = DatasetEntryEntity.alias("i")
+        lbl = LabelEntity.alias("l")
+        query = (
+            ann.select(
+                ds_entry.file_path.alias("image"),
+                ann.kind.alias("annot_kind"),
+                ann.points.alias("annot_points"),
+                lbl.name.alias("label_name"),
+                lbl.color.alias("label_color")
+            )
+                .join(ds_entry, on=(ann.entry == ds_entry.id))
+                .join(lbl, on=(ann.label == lbl.id), join_type=JOIN.LEFT_OUTER)
+                .where((ann.label.is_null(False)) & (ds_entry.dataset == dataset_id) & (ann.kind == "polygon"))
+        )
+        cursor = query.dicts().execute()
+        result = []
+        for row in cursor:
+            result.append(row)
+        return result
+
+
+
+    @db.connection_context()
+    def fetch_labels(self, dataset_id: int = None):
+        e = DatasetEntryEntity.alias("e")
+        l = LabelEntity.alias("l")
+        query = (
+            e.select(
+                e.file_path.alias("image"),
+                l.name.alias("label")
+            )
+            .join(l, on=(e.label == l.id))
+            .where((e.dataset_id == dataset_id) & (e.label.is_null(False)))
         )
         cursor = query.dicts().execute()
         result = []
