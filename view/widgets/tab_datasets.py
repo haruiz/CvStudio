@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
 
+import more_itertools
+import numpy as np
 import dask
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QSize, QObject, pyqtSignal
@@ -25,7 +27,7 @@ from .response_grid import GridCard
 from .response_grid import ResponseGridLayout
 from .tab_media import MediaTabWidget
 import pandas as pd
-from PIL import Image
+from PIL import Image, ImageDraw
 
 class DatasetGridWidget(QWidget, QObject):
     new_dataset_action_signal = pyqtSignal()
@@ -194,8 +196,6 @@ class DatasetTabWidget(QScrollArea):
         index = tab_widget_manager.addTab(tab_widget, vo.name)
         tab_widget_manager.setCurrentIndex(index)
 
-
-
     @gui_exception
     def download_annot_action_slot(self, vo: DatasetVO):
         menu = QMenu()
@@ -223,7 +223,7 @@ class DatasetTabWidget(QScrollArea):
         # masks menu actions
         #polygons_menu_export2csv_action = masks_menu.addAction(".csv (cv-studio)")
         polygons_menu_export2json_action = masks_menu.addAction(".json (cv-studio)")
-        #masks_menu.addAction(".png")
+        polygons_menu_export2png_action = masks_menu.addAction(".png")
 
         action = menu.exec_(QCursor.pos())
         if action:
@@ -239,12 +239,14 @@ class DatasetTabWidget(QScrollArea):
             elif action == boxes_menu_export2json_action:
                 self.export_boxes_annots(vo, "json")
             elif action == boxes_menu_export2pascal_action:
-                self.export_boxes_annots2pascal(vo, "pascal")
+                self.export_boxes_annots2pascal(vo)
             # masks menu actions
             # elif action == polygons_menu_export2csv_action:
             #     self.export_polygons_annots(vo, "csv")
             elif action == polygons_menu_export2json_action:
                 self.export_polygons_annots(vo, "json")
+            elif action == polygons_menu_export2png_action:
+                self.export_polygons_annots2png(vo)
 
     @gui_exception
     def import_annot_action_slot(self, dataset_vo: DatasetVO):
@@ -429,7 +431,7 @@ class DatasetTabWidget(QScrollArea):
             self.thread_pool.start(worker)
 
     @gui_exception
-    def export_boxes_annots2pascal(self, dataset_vo: DatasetVO, export_format):
+    def export_boxes_annots2pascal(self, dataset_vo: DatasetVO):
 
         output_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
         if output_folder:
@@ -519,6 +521,78 @@ class DatasetTabWidget(QScrollArea):
                 if err:
                     raise err
                 if success:
+                    GUIUtilities.show_info_message("Annotations exported successfully", "Done")
+                else:
+                    GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),"Done")
+
+            worker = Worker(do_work)
+            worker.signals.result.connect(done_work)
+            self.thread_pool.start(worker)
+
+    @gui_exception
+    def export_polygons_annots2png(self, dataset_vo: DatasetVO):
+        selected_folder = str(QFileDialog.getExistingDirectory(None, "select the folder"))
+
+        if selected_folder:
+            selected_folder = Path(selected_folder)
+            @work_exception
+            def do_work():
+                annotations = self._annot_dao.fetch_polygons(dataset_vo.id)
+                if annotations:
+                    color_palette = set(ann["label_color"] for ann in annotations)
+                    color_palette = [ColorUtilities.hex2RGB(c) for c in color_palette]
+                    color_palette = np.asarray([[0,0,0]] + color_palette)
+                    color_palette_flatten = color_palette.flatten()
+
+                    labels_map = set(ann["label_name"] for ann in annotations)
+                    labels_map = sorted(labels_map)
+
+                    labels_map = {l:i+1 for i,l in enumerate(labels_map)}
+                    colors_map = {l: color_palette.tolist()[i+1] for i, l in enumerate(labels_map)}
+
+                    images = sorted(annotations, key=lambda ann: ann["image"])
+                    images = itertools.groupby(images, key=lambda ann: ann["image"])
+                    for img_path, img_annotations in images:
+                        image_name = Path(img_path).stem
+                        image = Image.open(img_path).convert("RGB")
+                        width, height = image.size
+                        mask = Image.new("P", (width, height), 0)
+                        mask.putpalette(color_palette_flatten.tolist())
+                        for region in img_annotations:
+                            label = region["label_name"]
+                            points = region["annot_points"]
+                            points = map(float, points.split(","))
+                            points = list(map(lambda pt: tuple(pt),more_itertools.chunked(points, 2)))
+                            if len(points) > 0:
+                                if label in labels_map:
+                                    drawable_image = ImageDraw.Draw(mask)
+                                    label_id = labels_map[label]
+                                    drawable_image.polygon(points, fill=label_id)
+                                    del drawable_image
+                        mask.save(str(selected_folder.joinpath("{}.png".format(image_name))), "PNG")  # export image
+
+                    def dumper(obj):
+                        try:
+                            return obj.toJSON()
+                        except:
+                            return obj.__dict__
+
+                    colors_map_file = selected_folder.joinpath("colors_map.json")
+                    with open(str(colors_map_file), "w") as f:
+                        f.write(json.dumps(colors_map, default=dumper, indent=2))
+
+                    labels_map_file = selected_folder.joinpath("labels_map.json")
+                    with open(str(labels_map_file), "w") as f:
+                        f.write(json.dumps(labels_map, default=dumper, indent=2))
+
+                return annotations, None
+
+            @gui_exception
+            def done_work(result):
+                annotations, err = result
+                if err:
+                    raise err
+                if annotations:
                     GUIUtilities.show_info_message("Annotations exported successfully", "Done")
                 else:
                     GUIUtilities.show_info_message("Not annotations found for the dataset {}".format(dataset_vo.name),"Done")
