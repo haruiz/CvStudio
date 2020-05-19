@@ -187,8 +187,7 @@ class ImageViewer(QGraphicsView, QObject):
     def correct_lightness(self):
         self._image = ImageUtilities.correct_lightness(self._image)
 
-    @gui_exception
-    def kmeans(self, k):
+    def clusterize(self, k):
         self._image = ImageUtilities.kmeans(self._image.copy(), k)
 
     @property

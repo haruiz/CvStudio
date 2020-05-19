@@ -341,7 +341,7 @@ class ImageViewerWidget(QWidget, Ui_Image_Viewer_Widget):
 
     def _process_image_adjust_oper(self, action: QAction):
         curr_action = action.data()
-
+        k = self._number_of_clusters_spin.value()
         @work_exception
         def do_work():
             if curr_action == "reset":
@@ -352,7 +352,8 @@ class ImageViewerWidget(QWidget, Ui_Image_Viewer_Widget):
             elif curr_action == "correct_l":
                 self.image_viewer.correct_lightness()
             elif curr_action == "clustering":
-                self.image_viewer.kmeans(k=self._number_of_clusters_spin.value())
+                self.image_viewer.clusterize(k=k)
+
             return None, None
 
         @gui_exception
