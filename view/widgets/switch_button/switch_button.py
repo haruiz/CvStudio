@@ -5,28 +5,17 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QApplication, QBoxLayout, QVBo
 import sys
 
 from util import GUIUtilities
+from view.widgets import ImageButton
 
 
-class SwitchButton(QPushButton):
-    def __init__(self, icon: QIcon = QIcon(), size: QSize = QSize(28, 28), tag=None, parent=None):
-        super(SwitchButton, self).__init__(parent)
+class SwitchButton(ImageButton):
+    def __init__(self, icon: QIcon = QIcon(), size: QSize = QSize(28, 28), tag=None, tooltip=None, parent=None):
+        super(SwitchButton, self).__init__(icon, size, tag, tooltip, parent)
         self.setCheckable(True)
         self.setChecked(False)
         self._checked_icon = icon
         self._unchecked_icon = GUIUtilities.color_icon2gray_icon(self._checked_icon)
         self.setCursor(QtCore.Qt.PointingHandCursor)
-        self._tag = tag
-        self.setIconSize(size)
-        self._effect = self.graphicsEffect()
-        self.setStyleSheet('QPushButton{border: 0px solid;}')
-
-    @property
-    def tag(self):
-        return self._tag
-
-    @tag.setter
-    def tag(self, value):
-        self._tag = value
 
     def paintEvent(self, e: QtGui.QPaintEvent) -> None:
         if self.isChecked():

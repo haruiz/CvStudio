@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QPushButton, QGraphicsDropShadowEffect
 class ImageButton(QPushButton, QObject):
     doubleClicked = pyqtSignal(QtGui.QMouseEvent)
 
-    def __init__(self, icon: QIcon = QIcon(), size: QSize = QSize(64, 64), tag=None, parent=None):
+    def __init__(self, icon: QIcon = QIcon(), size: QSize = QSize(64, 64), tag=None, tooltip=None, parent=None):
         super(ImageButton, self).__init__(parent)
         self.setIcon(icon)
         self.setContentsMargins(10, 10, 10, 20)
@@ -18,6 +18,7 @@ class ImageButton(QPushButton, QObject):
         self.setObjectName("image_button")
         self._tag = tag
         self.setStyleSheet('QPushButton{border: 0px solid;}')
+        self.setToolTip(tooltip)
         # shadow.setColor(QtGui.QColor(99, 255, 255))
 
     @property
