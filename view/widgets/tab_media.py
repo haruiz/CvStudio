@@ -9,7 +9,7 @@ from decor import gui_exception
 from util import Worker, GUIUtilities as gui
 from view.widgets.gallery import GalleryAction
 from view.widgets.gallery.card import GalleryCard
-from view.widgets.image_viewer.image_viewer import ImageViewerWidget
+from view.widgets.image_viewer.image_viewer_widget import ImageViewerWidget
 from vo import DatasetEntryVO, DatasetVO
 from .gallery import Gallery
 from .loading_dialog import QLoadingDialog

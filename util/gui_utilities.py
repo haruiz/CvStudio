@@ -1,7 +1,8 @@
 import os
 import typing
-
+import cv2
 import numpy as np
+from PyQt5 import QtGui
 from PyQt5.QtGui import QIcon, QPixmap, QImage, qRgb
 from PyQt5.QtWidgets import QLayout, QGridLayout, QLayoutItem, QMessageBox, QApplication, QMainWindow, QVBoxLayout, \
     QGroupBox, \
@@ -138,3 +139,26 @@ class GUIUtilities:
         files, _ = QFileDialog.getOpenFileNames(parent, title, os.path.join(os.path.expanduser('~')), ext,
                                                 options=options)
         return files
+
+    @classmethod
+    def color_icon2gray_icon(cls, icon: QIcon):
+        # TODO: implement for RGB icons
+        pixmap = icon.pixmap(icon.availableSizes()[0])
+        img_array = cls.Qpixmap2array(pixmap)
+        *_, alpha = cv2.split(img_array)
+        gray_layer = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
+        gray_img = cv2.merge((gray_layer, gray_layer, gray_layer, alpha))
+        height, width, channel = gray_img.shape
+        bytesPerLine = 4 * width
+        qImg = QImage(gray_img.data, width, height, bytesPerLine, QImage.Format_RGBA8888)
+        pixmap = QtGui.QPixmap.fromImage(qImg)
+        return QIcon(pixmap)
+
+    @classmethod
+    def Qpixmap2array(cls, pixmap: QPixmap) -> np.ndarray:
+        image=pixmap.toImage()
+        channels_count= 4 if image.hasAlphaChannel() else 3
+        width, height = image.width(), image.height()
+        buffer=image.bits().asarray(width*height*channels_count)
+        arr=np.frombuffer(buffer,dtype=np.uint8).reshape((height,width,channels_count))
+        return arr

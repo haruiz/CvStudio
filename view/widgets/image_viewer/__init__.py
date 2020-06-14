@@ -1,1 +1,1 @@
-from view.widgets.image_viewer.image_graphics_view import ImageViewer
+from .image_viewer_widget import ImageViewerWidget

@@ -9,10 +9,10 @@ import imutils
 import more_itertools
 import numpy as np
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSize, QThreadPool, QPointF, QPoint, QRectF, QItemSelection, QModelIndex
+from PyQt5.QtCore import QThreadPool, QPointF, QPoint, QRectF, QItemSelection, QModelIndex
 from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import QWidget, QAbstractItemView, QDialog, QAction, \
-    QLabel, QGraphicsScene, QMenu, QGraphicsDropShadowEffect, QFrame, QFormLayout, \
+    QLabel, QGraphicsScene, QMenu, QGraphicsDropShadowEffect, QFormLayout, \
     QSpinBox, QMessageBox
 
 from core import HubClientFactory, Framework
@@ -26,27 +26,15 @@ from view.forms.label_form import NewLabelForm
 from view.widgets.common import CustomNode
 from view.widgets.common.custom_list import CustomListWidgetItem
 from view.widgets.double_slider import DoubleSlider
-from view.widgets.image_viewer import ImageViewer
-from view.widgets.image_viewer.selection_mode import SELECTION_TOOL
+from view.widgets.image_viewer.image_graphics_view import ImageViewer
 from view.widgets.labels_tableview import LabelsTableView
 from view.widgets.loading_dialog import QLoadingDialog
 from view.widgets.models_treeview import ModelsTreeview
 from vo import LabelVO, DatasetEntryVO, AnnotaVO, HubVO
 from .base_image_viewer import Ui_Image_Viewer_Widget
+from .image_viewer_toolbox import ImageViewerToolBox
 from .items import EditableBox, EditablePolygon, EditableItem, EditableEllipse
-from ..image_button import ImageButton
-
-
-class SeparatorWidget(QFrame):
-    def __init__(self, parent=None):
-        super(SeparatorWidget, self).__init__(parent)
-        self.setFrameShape(QFrame.HLine)
-        self.setFrameShadow(QFrame.Sunken)
-        self.setStyleSheet('''
-            QFrame{
-                background-color: black;
-            }
-        ''')
+from .selection_mode import SELECTION_TOOL
 
 
 class ImageViewerWidget(QWidget, Ui_Image_Viewer_Widget):
@@ -145,8 +133,9 @@ class ImageViewerWidget(QWidget, Ui_Image_Viewer_Widget):
         self._tag = None
         self._curr_channel = 0
         self._channels = []
-        self._toolbox = []
-        self.build_toolbox()
+        self._toolbox = ImageViewerToolBox()
+        self._toolbox.onAction.connect(self.on_action_toolbox_slot)
+        self.actions_layout.addWidget(self._toolbox)
 
     @property
     def image(self):
@@ -179,25 +168,7 @@ class ImageViewerWidget(QWidget, Ui_Image_Viewer_Widget):
     def curr_channel(self, value):
         self._curr_channel = value
 
-    def build_toolbox(self):
-        icon_size = QSize(28, 28)
-        self._toolbox = [
-            ImageButton(icon=GUIUtilities.get_icon("polygon.png"), size=icon_size, tag="polygon"),
-            ImageButton(icon=GUIUtilities.get_icon("square.png"), size=icon_size, tag="box"),
-            ImageButton(icon=GUIUtilities.get_icon("circle.png"), size=icon_size, tag="ellipse"),
-            ImageButton(icon=GUIUtilities.get_icon("highlighter.png"), size=icon_size, tag="free"),
-            ImageButton(icon=GUIUtilities.get_icon("robotic-hand.png"), size=icon_size, tag="points"),
-            ImageButton(icon=GUIUtilities.get_icon("cursor.png"), size=icon_size, tag="pointer"),
-            ImageButton(icon=GUIUtilities.get_icon("save-icon.png"), size=icon_size, tag="save"),
-            ImageButton(icon=GUIUtilities.get_icon("clean.png"), size=icon_size, tag="clean")]
-        for button in self._toolbox:
-            self.actions_layout.addWidget(button)
-            self.actions_layout.addWidget(SeparatorWidget())
-            button.clicked.connect(self._action_toolbox_clicked_slot)
-
-    def _action_toolbox_clicked_slot(self):
-        button: ImageButton = self.sender()
-        action_tag = button.tag
+    def on_action_toolbox_slot(self, action_tag):
         tools_dict = {
             "polygon": SELECTION_TOOL.POLYGON,
             "box": SELECTION_TOOL.BOX,
@@ -342,6 +313,7 @@ class ImageViewerWidget(QWidget, Ui_Image_Viewer_Widget):
     def _process_image_adjust_oper(self, action: QAction):
         curr_action = action.data()
         k = self._number_of_clusters_spin.value()
+
         @work_exception
         def do_work():
             if curr_action == "reset":
