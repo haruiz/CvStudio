@@ -93,4 +93,4 @@ Citation: haruiz. CV-Studio. Git code (2019). https://github.com/haruiz/CvStudio
 ### Models 
 
 [Deep Extreme Cut: From Extreme Points to Object Segmentation](https://github.com/scaelles/DEXTR-PyTorch/)
-<img alt="" src="assets/images/dextr.png"></img> 
+<img alt="" src="images/dextr.png"></img> 
