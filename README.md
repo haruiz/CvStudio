@@ -61,7 +61,7 @@ This command must be executed from the CVStudio folder:
 
 ### 4. Run CVStudio
 ```console
-    python cvstudio.py
+    cvstudio
 ```
 
 ## Documentation
