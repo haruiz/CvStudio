@@ -1,0 +1,14 @@
+* {
+    font-family: "Roboto";
+    font-size: 12px;
+}
+
+QLabel {
+    color: darkgray;
+}
+
+QToolTip {
+    border: 2px solid black;
+    border-radius: 40px;
+    padding: 4px;
+}
