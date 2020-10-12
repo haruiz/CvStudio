@@ -28,14 +28,6 @@ class DatasetVO:
         self._size = value
 
     @property
-    def folder(self):
-        return self._folder
-
-    @folder.setter
-    def folder(self, value):
-        self._folder = value
-
-    @property
     def id(self):
         return self._id
 
@@ -59,10 +51,3 @@ class DatasetVO:
     def description(self, value):
         self._description = value
 
-    @property
-    def data_type(self):
-        return self._data_type
-
-    @data_type.setter
-    def data_type(self, value):
-        self._data_type = value

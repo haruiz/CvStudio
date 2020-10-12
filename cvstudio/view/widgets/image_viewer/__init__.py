@@ -1,1 +1,0 @@
-from .image_viewer_widget import ImageViewerWidget

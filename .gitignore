@@ -121,6 +121,8 @@ venv.bak/
 .ropeproject
 *.db
 studio.db
+studio.db-shm
+studio.db-wal
 # mkdocs documentation
 /site
 
