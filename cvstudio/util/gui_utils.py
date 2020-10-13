@@ -25,8 +25,20 @@ class GUIUtils:
         assets_folder = Path(__file__).parents[1].joinpath("assets")
         app = QApplication.instance()
         curr_theme = app.property("theme")
-        asset_path = assets_folder.joinpath(f"icons/{curr_theme}/{asset_file_name}")
+        asset_path = assets_folder.joinpath(f"{curr_theme}/icons/{asset_file_name}")
         return QIcon(str(asset_path))
+
+    @staticmethod
+    def get_assets_path() -> Path:
+        """
+        create an icon instance based on the asset file name
+        :rtype: QIcon instance
+        """
+        assets_folder = Path(__file__).parents[1].joinpath("assets")
+        app = QApplication.instance()
+        curr_theme = app.property("theme")
+        asset_path = assets_folder.joinpath(f"{curr_theme}")
+        return asset_path
 
     @classmethod
     def icon_color2gray(cls, icon: QIcon) -> QIcon:
@@ -81,7 +93,7 @@ class GUIUtils:
         msg.exec_()
 
     @staticmethod
-    def show_info_message(message: str, title="Error"):
+    def show_info_message(message: str, title="Info"):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
         msg.setText(message)

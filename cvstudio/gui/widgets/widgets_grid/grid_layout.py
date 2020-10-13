@@ -6,6 +6,7 @@ class WidgetsGridLayout(QGridLayout, QObject):
     def __init__(self, parent=None):
         super(WidgetsGridLayout, self).__init__(parent)
         self._widgets = None
+        self.setContentsMargins(0,0,0,0)
         self._cols = 5
 
     @property

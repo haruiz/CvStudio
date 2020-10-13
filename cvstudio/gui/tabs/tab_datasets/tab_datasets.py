@@ -1,8 +1,8 @@
+from cvstudio.dao import DatasetDao
 from cvstudio.decor import gui_exception, work_exception
 from cvstudio.gui.forms import DatasetForm
-from ..tab_media import MediaTabWidget
 from cvstudio.gui.tabs.tab_datasets.datasets_grid import DatasetsGrid
-from cvstudio.gui.widgets import WidgetsGridPaginator, ImageButton
+from cvstudio.gui.widgets import ImageButton
 from cvstudio.pyqt import (
     QtCore,
     QVBoxLayout,
@@ -10,10 +10,12 @@ from cvstudio.pyqt import (
     QSize,
     QThreadPool,
     QWidget,
-    QDialog
+    QDialog,
+    QMessageBox,
 )
 from cvstudio.util import GUIUtils, Worker
-from cvstudio.dao import DatasetDao
+from ..tab_media import MediaTabWidget
+from ...widgets.widgets_grid import WidgetsGridPaginator
 
 
 class DatasetTabWidget(QWidget):
@@ -24,6 +26,7 @@ class DatasetTabWidget(QWidget):
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
         self._thread_pool = QThreadPool()
 
         icon = GUIUtils.get_icon("new_folder.png")
@@ -34,15 +37,14 @@ class DatasetTabWidget(QWidget):
         self.btn_add_new_dataset.clicked.connect(self.btn_add_new_dataset_click)
 
         self.data_grid = DatasetsGrid()
+
         self.data_grid.bind()
         self.data_grid.action_signal.connect(self.grid_card_action_dispatch)
         self.data_grid.double_click_action_signal.connect(self.grid_card_double_click)
         self.data_grid_paginator = WidgetsGridPaginator()
         self.data_grid_paginator.paginate.connect(self.page_changed)
 
-        self.layout.addWidget(
-            self.toolbox, alignment=QtCore.Qt.AlignLeft
-        )
+        self.layout.addWidget(self.toolbox, alignment=QtCore.Qt.AlignLeft)
         self.layout.addWidget(self.data_grid)
         self.layout.addWidget(
             self.data_grid_paginator, alignment=QtCore.Qt.AlignHCenter
@@ -52,6 +54,10 @@ class DatasetTabWidget(QWidget):
 
     def page_changed(self, curr_page, _):
         self.load_grid(page_number=curr_page + 1)
+
+    def refresh_grid(self):
+        self.load_paginator()
+        self.load_grid()
 
     @gui_exception
     def load_paginator(self):
@@ -76,6 +82,8 @@ class DatasetTabWidget(QWidget):
 
     @gui_exception
     def load_grid(self, page_number=1):
+        self.data_grid.is_loading = True
+
         @work_exception
         def do_work():
             results = self.datasets_dao.fetch(page_number, self.ITEMS_PER_PAGE)
@@ -87,14 +95,25 @@ class DatasetTabWidget(QWidget):
             if error:
                 raise error
             self.data_grid.items = items
+            self.data_grid.is_loading = False
             self.data_grid.bind()
 
         worker = Worker(do_work)  # async worker
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)  # start worker
 
-    def grid_card_action_dispatch(self, name, vo):
-        print(name)
+    def grid_card_action_dispatch(self, action_name, item):
+        if action_name == "delete":
+            reply = QMessageBox.question(
+                self,
+                "Confirmation",
+                "Are you sure?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply == QMessageBox.Yes:
+                self.datasets_dao.delete(item.id)
+                self.refresh_grid()
 
     @gui_exception
     def grid_card_double_click(self, vo):

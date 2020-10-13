@@ -24,7 +24,7 @@ class ImageButton(QPushButton, QObject):
         super(ImageButton, self).__init__(parent)
         self.setIcon(icon)
         self.setContentsMargins(10, 10, 10, 20)
-        #self.setCursor(QtCore.Qt.PointingHandCursor)
+        self.setCursor(QtCore.Qt.PointingHandCursor)
         self._size = size
         self._effect = self.graphicsEffect()
         self.setIconSize(self._size)

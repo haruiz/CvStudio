@@ -1,8 +1,8 @@
 import typing
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import (
+from cvstudio.pyqt import (
+    QtCore,
+    QObject,
     QFrame,
     QVBoxLayout,
     QLabel,
@@ -36,7 +36,7 @@ class WidgetsGridCard(QFrame, QObject):
         self._body_widget = None
         # layouts
         self._body_frame = QFrame()
-        #self._body_frame.setMinimumWidth(width)
+        # self._body_frame.setMinimumWidth(width)
         self._body_frame.setObjectName("image_container")
         self._body_frame.setLayout(QVBoxLayout())
         self._body_frame.layout().setContentsMargins(2, 2, 2, 2)
