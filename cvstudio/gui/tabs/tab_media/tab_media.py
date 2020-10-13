@@ -130,7 +130,7 @@ class MediaTabWidget(QWidget):
                     size(file_size, system=alternative) if file_size > 0 else "0 MB"
                 )
                 media_item.label2 = (
-                    f"({pixmap.width()}px x {pixmap.height()}px) \n {file_sz_str}"
+                    f"({image.shape[0]}px x {image.shape[1]}px) \n {file_sz_str}"
                 )
                 media_item.tag = media_item_vo
                 del image
