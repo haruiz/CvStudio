@@ -1,5 +1,7 @@
 from pathlib import Path
-
+import cv2
+import imutils
+import numpy as np
 import dask
 from hurry.filesize import size, alternative
 
@@ -63,6 +65,7 @@ class MediaTabWidget(QWidget):
 
     @gui_exception
     def data_grid_files_dropped_dispatch(self, files):
+        # save the files into the db
         self.data_grid.is_loading = True
         self.data_grid_paginator.disable_actions()
 
@@ -107,9 +110,14 @@ class MediaTabWidget(QWidget):
             # load images from
             @dask.delayed
             def load_image(media_item_vo):
-                # image = QImage(media_item_vo.file_path)
                 media_item = MediaDataGridItem()
-                pixmap = QPixmap(media_item_vo.file_path)  # QPixmap.fromImage(image)
+                # image = QImage(media_item_vo.file_path)
+                #pixmap = QPixmap(media_item_vo.file_path)  # QPixmap.fromImage(image)image = cv2.imread(file_path)
+
+                image = cv2.imread(media_item_vo.file_path)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                pixmap = GUIUtils.array_to_qimage(image)
+                pixmap = QPixmap.fromImage(pixmap)
                 w = min(pixmap.width(), 150)
                 h = min(pixmap.height(), 150)
                 pixmap = pixmap.scaled(
@@ -125,6 +133,7 @@ class MediaTabWidget(QWidget):
                     f"({pixmap.width()}px x {pixmap.height()}px) \n {file_sz_str}"
                 )
                 media_item.tag = media_item_vo
+                del image
                 return media_item
 
             return dask.compute(*map(load_image, results)), None
