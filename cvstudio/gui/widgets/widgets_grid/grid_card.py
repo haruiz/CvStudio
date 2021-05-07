@@ -10,12 +10,15 @@ from cvstudio.pyqt import (
     QHBoxLayout,
     QPushButton,
     QWidget,
+    Signal,
+    QMouseEvent
 )
 
 
 class WidgetsGridCard(QFrame, QObject):
+    double_click = Signal()
     def __init__(
-        self, parent=None, debug=False, with_actions=True, with_title=True, width=150
+        self, parent=None, debug=False, with_actions=True, with_title=True
     ):
         super(WidgetsGridCard, self).__init__(parent)
         self._buttons = []
@@ -121,3 +124,6 @@ class WidgetsGridCard(QFrame, QObject):
         self._buttons = value
         for btn in self._buttons:
             self._actions_frame.layout().addWidget(btn)
+
+    def mouseDoubleClickEvent(self, a0: QMouseEvent) -> None:
+        self.double_click.emit()

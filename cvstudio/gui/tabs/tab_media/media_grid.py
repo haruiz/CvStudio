@@ -10,6 +10,7 @@ from .hover_label import LabelHovered
 
 class MediaDataGrid(WidgetsGrid, QObject):
     files_dropped = Signal(list)
+    double_click = Signal(object)
 
     def __init__(self, parent=None, ncols=8):
         super(MediaDataGrid, self).__init__(parent, ncols)
@@ -17,6 +18,7 @@ class MediaDataGrid(WidgetsGrid, QObject):
 
     def create_widget(self, item: MediaDataGridItem) -> QWidget:
         card = WidgetsGridCard(debug=False)
+        #card.double_click.connect(lambda : self.double_click.emit(item.tag))
         label_image = LabelHovered()
         label_image.hoverTimeout.connect(lambda: self.label_hover_timeout(item.tag.file_path))
         label_image.setFixedSize(QSize(150, 150))
@@ -31,6 +33,7 @@ class MediaDataGrid(WidgetsGrid, QObject):
         btn_edit.setToolTip("Annotate")
         card.add_buttons([btn_delete, btn_edit])
         return card
+
 
     def label_hover_timeout(self,file_path):
         viewer = ImageDialog(file_path)

@@ -13,7 +13,7 @@ class HoverThread(threading.Thread):
     def __init__(self, name="hover thread"):
         self._stop_event = threading.Event()
         self._sleep_time = 0.5
-        self.timeout = 1
+        self.timeout = 3
         self._counter = 0
         self.signals = HoverThreadSignals()
         threading.Thread.__init__(self, name=name)
@@ -21,6 +21,7 @@ class HoverThread(threading.Thread):
     def run(self) -> None:
         while not self._stop_event.is_set():
             self._counter += 1
+            print(self._counter)
             self._stop_event.wait(self._sleep_time)
             if self._counter > self.timeout:
                 self._stop_event.set()
@@ -48,6 +49,7 @@ class LabelHovered(QLabel, QObject):
         self._hover_thread = HoverThread()
         self._hover_thread.start()
         self._hover_thread.signals.timeoutSignal.connect(self.timeout_callback)
+        print("here")
         super(LabelHovered, self).enterEvent(evt)
 
     def leaveEvent(self, evt: QtCore.QEvent) -> None:

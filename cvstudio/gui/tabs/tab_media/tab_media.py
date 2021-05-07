@@ -50,6 +50,7 @@ class MediaTabWidget(QWidget):
         )
         self.data_grid.files_dropped.connect(self.data_grid_files_dropped_dispatch)
         self.data_grid.bind()
+        self.data_grid.double_click.connect(self.grid_card_double_click)
         # self.data_grid.action_signal.connect(self.grid_card_action_dispatch)
         # self.data_grid.double_click_action_signal.connect(self.grid_card_double_click)
         self.layout.addWidget(self.data_grid)
@@ -112,7 +113,7 @@ class MediaTabWidget(QWidget):
             def load_image(media_item_vo):
                 media_item = MediaDataGridItem()
                 # image = QImage(media_item_vo.file_path)
-                #pixmap = QPixmap(media_item_vo.file_path)  # QPixmap.fromImage(image)image = cv2.imread(file_path)
+                # pixmap = QPixmap(media_item_vo.file_path)  # QPixmap.fromImage(image)image = cv2.imread(file_path)
 
                 image = cv2.imread(media_item_vo.file_path)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -180,3 +181,6 @@ class MediaTabWidget(QWidget):
     def refresh_grid(self):
         self.load_paginator()
         self.load_grid()
+
+    def grid_card_double_click(self, item):
+        print(item.file_path)

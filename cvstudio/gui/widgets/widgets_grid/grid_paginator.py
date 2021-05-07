@@ -45,7 +45,6 @@ class WidgetsGridPaginator(QFrame, QObject):
         self.layout.addWidget(self.btn_next)
         self.layout.addWidget(self.btn_last)
 
-
     @property
     def items_count(self):
         return self._items_count
@@ -89,11 +88,9 @@ class WidgetsGridPaginator(QFrame, QObject):
         self.current_page = self._current_page
         self.bind()
 
-
     def btn_last_page_click(self):
         self._current_page = self._pages_count - 1
         self.bind()
-
 
     def btn_first_page_click(self):
         self._current_page = 0
