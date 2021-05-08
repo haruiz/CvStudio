@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import cv2
 import dask
 from hurry.filesize import size, alternative
 
@@ -38,114 +39,35 @@ class MediaTabWidget(QWidget):
         self.btn_add_new_dataset = ImageButton(icon, size=QSize(32, 32))
         self.toolbox = QWidget()
         self.toolbox_layout = QHBoxLayout(self.toolbox)
+
+        assets_path = GUIUtils.get_assets_path()
+        loading_gif = assets_path.joinpath("icons/loading.gif")
+        self.media_grid = MediaDataGrid()
+        self.media_grid.loading_gif = loading_gif
+        #self.media_grid.files_dropped.connect(self.data_grid_files_dropped_dispatch)
+        #self.media_grid.double_click.connect(self.grid_card_double_click)
+
+        self.media_grid_paginator = WidgetsGridPaginator()
+        self.media_grid_paginator.bind()
+        #self.media_grid_paginator.paginate.connect(self.page_changed)
+
         self.layout.addWidget(self.toolbox, alignment=QtCore.Qt.AlignLeft)
-        # self.toolbox_layout.addWidget(self.btn_add_new_dataset)
-        # self.btn_add_new_dataset.clicked.connect(self.btn_add_new_dataset_click)
-
-        self.data_grid = MediaDataGrid()
-        self.data_grid.loading_gif = GUIUtils.get_assets_path().joinpath(
-            "icons/loading.gif"
-        )
-        self.data_grid.files_dropped.connect(self.data_grid_files_dropped_dispatch)
-        self.data_grid.bind()
-        # self.data_grid.action_signal.connect(self.grid_card_action_dispatch)
-        # self.data_grid.double_click_action_signal.connect(self.grid_card_double_click)
-        self.layout.addWidget(self.data_grid)
-
-        self.data_grid_paginator = WidgetsGridPaginator()
-        self.data_grid_paginator.paginate.connect(self.page_changed)
+        self.layout.addWidget(self.media_grid)
         self.layout.addWidget(
-            self.data_grid_paginator, alignment=QtCore.Qt.AlignHCenter
+            self.media_grid_paginator, alignment=QtCore.Qt.AlignHCenter
         )
         self.datasets_dao = DatasetDao()
         self.dataset_vo = dataset_vo
+
+        self.load_data()
+
+    def load_data(self):
         self.load_paginator()
-
-    @gui_exception
-    def data_grid_files_dropped_dispatch(self, files):
-        self.data_grid.is_loading = True
-        self.data_grid_paginator.disable_actions()
-
-        @work_exception
-        def do_work():
-            delayed_tasks = map(lambda f: dask.delayed(f.stat().st_size), files)
-            files_sizes = dask.compute(*delayed_tasks)
-            entries = []
-            for file_path, file_size in zip(files, files_sizes):
-                vo = DatasetEntryVO()
-                vo.file_path = file_path
-                vo.file_size = file_size
-                vo.dataset = self.dataset_vo.id
-                entries.append(vo)
-            self.datasets_dao.add_files(entries)
-            return None, None
-
-        @gui_exception
-        def done_work(result):
-            items, error = result
-            if error:
-                raise error
-            self.refresh_grid()
-            self.data_grid.is_loading = False
-            self.data_grid_paginator.disable_actions(False)
-
-        worker = Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)
-
-    @gui_exception
-    def load_grid(self, page_number=1):
-        self.data_grid.is_loading = True
-        self.data_grid_paginator.disable_actions()
-
-        @work_exception
-        def do_work():
-            results = self.datasets_dao.fetch_files(
-                self.dataset_vo.id, page_number, self.ITEMS_PER_PAGE
-            )
-
-            # load images from
-            @dask.delayed
-            def load_image(media_item_vo):
-                # image = QImage(media_item_vo.file_path)
-                media_item = MediaDataGridItem()
-                pixmap = QPixmap(media_item_vo.file_path)  # QPixmap.fromImage(image)
-                w = min(pixmap.width(), 150)
-                h = min(pixmap.height(), 150)
-                pixmap = pixmap.scaled(
-                    w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation
-                )
-                media_item.thumbnail = pixmap
-                file_size = int(media_item_vo.file_size)
-                media_item.label = Path(media_item_vo.file_path).name
-                file_sz_str = (
-                    size(file_size, system=alternative) if file_size > 0 else "0 MB"
-                )
-                media_item.label2 = (
-                    f"({pixmap.width()}px x {pixmap.height()}px) \n {file_sz_str}"
-                )
-                media_item.tag = media_item_vo
-                return media_item
-
-            return dask.compute(*map(load_image, results)), None
-
-        @gui_exception
-        def done_work(result):
-            items, error = result
-            if error:
-                raise error
-
-            self.data_grid.items = items
-            self.data_grid.is_loading = False
-            self.data_grid.bind()
-            self.data_grid_paginator.disable_actions(False)
-
-        worker = Worker(do_work)  # async worker
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)  # start worker
+        self.load_grid()
 
     @gui_exception
     def load_paginator(self):
+
         @work_exception
         def do_work():
             results = self.datasets_dao.count_files(self.dataset_vo.id)
@@ -157,17 +79,122 @@ class MediaTabWidget(QWidget):
             if error:
                 raise error
             if count:
-                self.data_grid_paginator.page_size = self.ITEMS_PER_PAGE
-                self.data_grid_paginator.items_count = count
-                self.data_grid_paginator.bind()
+                self.media_grid_paginator.page_size = self.ITEMS_PER_PAGE
+                self.media_grid_paginator.items_count = count
+                self.media_grid_paginator.bind()
 
-        worker = Worker(do_work)  # async worker
+        worker = Worker(do_work)   # async worker
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)  # start worker
 
     def page_changed(self, curr_page, _):
         self.load_grid(page_number=curr_page + 1)
 
-    def refresh_grid(self):
-        self.load_paginator()
-        self.load_grid()
+    @gui_exception
+    def load_grid(self, page_number=1):
+        pass
+
+
+
+
+
+    #     self.load_paginator()
+    #
+    # @gui_exception
+    # def data_grid_files_dropped_dispatch(self, files):
+    #     # save the files into the db
+    #     self.media_grid.is_loading = True
+    #     self.media_grid_paginator.disable_actions()
+    #
+    #     @work_exception
+    #     def do_work():
+    #         delayed_tasks = map(lambda f: dask.delayed(f.stat().st_size), files)
+    #         files_sizes = dask.compute(*delayed_tasks)
+    #         entries = []
+    #         for file_path, file_size in zip(files, files_sizes):
+    #             vo = DatasetEntryVO()
+    #             vo.file_path = file_path
+    #             vo.file_size = file_size
+    #             vo.dataset = self.dataset_vo.id
+    #             entries.append(vo)
+    #         self.datasets_dao.add_files(entries)
+    #         return None, None
+    #
+    #     @gui_exception
+    #     def done_work(result):
+    #         items, error = result
+    #         if error:
+    #             raise error
+    #         self.refresh_grid()
+    #         self.media_grid.is_loading = False
+    #         self.media_grid_paginator.disable_actions(False)
+    #
+    #     worker = Worker(do_work)
+    #     worker.signals.result.connect(done_work)
+    #     self._thread_pool.start(worker)
+    #
+    # @gui_exception
+    # def load_grid(self, page_number=1):
+    #     self.media_grid.is_loading = True
+    #     self.media_grid_paginator.disable_actions()
+    #
+    #     @work_exception
+    #     def do_work():
+    #         results = self.datasets_dao.fetch_files(
+    #             self.dataset_vo.id, page_number, self.ITEMS_PER_PAGE
+    #         )
+    #
+    #         # load images from
+    #         @dask.delayed
+    #         def load_image(media_item_vo):
+    #             media_item = MediaDataGridItem()
+    #             # image = QImage(media_item_vo.file_path)
+    #             # pixmap = QPixmap(media_item_vo.file_path)  # QPixmap.fromImage(image)image = cv2.imread(file_path)
+    #
+    #             image = cv2.imread(media_item_vo.file_path)
+    #             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #             pixmap = GUIUtils.array_to_qimage(image)
+    #             pixmap = QPixmap.fromImage(pixmap)
+    #             w = min(pixmap.width(), 150)
+    #             h = min(pixmap.height(), 150)
+    #             pixmap = pixmap.scaled(
+    #                 w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation
+    #             )
+    #             media_item.thumbnail = pixmap
+    #             file_size = int(media_item_vo.file_size)
+    #             media_item.title = Path(media_item_vo.file_path).name
+    #             file_sz_str = (
+    #                 size(file_size, system=alternative) if file_size > 0 else "0 MB"
+    #             )
+    #             media_item.subtitle = (
+    #                 f"({image.shape[0]}px x {image.shape[1]}px) \n {file_sz_str}"
+    #             )
+    #             media_item.tag = media_item_vo
+    #             del image
+    #             return media_item
+    #
+    #         return dask.compute(*map(load_image, results)), None
+    #
+    #     @gui_exception
+    #     def done_work(result):
+    #         items, error = result
+    #         if error:
+    #             raise error
+    #
+    #         self.media_grid.items = items
+    #         self.media_grid.is_loading = False
+    #         self.media_grid.bind()
+    #         self.media_grid_paginator.disable_actions(False)
+    #
+    #     worker = Worker(do_work)  # async worker
+    #     worker.signals.result.connect(done_work)
+    #     self._thread_pool.start(worker)  # start worker
+    #
+
+    #
+    # def refresh_grid(self):
+    #     self.load_paginator()
+    #     self.load_grid()
+    #
+    # def grid_card_double_click(self, item):
+    #     print(item.file_path)

@@ -10,29 +10,34 @@ from .hover_label import LabelHovered
 
 class MediaDataGrid(WidgetsGrid, QObject):
     files_dropped = Signal(list)
+    double_click = Signal(object)
 
     def __init__(self, parent=None, ncols=8):
         super(MediaDataGrid, self).__init__(parent, ncols)
         self.setAcceptDrops(True)
 
-    def create_widget(self, item: MediaDataGridItem) -> QWidget:
+    def build(self, item: MediaDataGridItem) -> QWidget:
         card = WidgetsGridCard(debug=False)
         label_image = LabelHovered()
-        label_image.hoverTimeout.connect(lambda: self.label_hover_timeout(item.tag.file_path))
+        label_image.hoverTimeout.connect(
+            lambda: self.show_image(item.tag.file_path)
+        )
         label_image.setFixedSize(QSize(150, 150))
         label_image.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         label_image.setPixmap(item.thumbnail)
         card.body = label_image
-        card.label.setText(item.label)
-        card.label.setText(item.label2)
+        card.title.setText(item.title)
+        card.subtitle.setText(item.subtitle)
+
         btn_delete = ImageButton(GUIUtils.get_icon("delete.png"), size=QSize(15, 15))
         btn_delete.setToolTip("Delete dataset")
         btn_edit = ImageButton(GUIUtils.get_icon("annotations.png"), size=QSize(15, 15))
         btn_edit.setToolTip("Annotate")
-        card.add_buttons([btn_delete, btn_edit])
+
+        card.add_actions([btn_delete, btn_edit])
         return card
 
-    def label_hover_timeout(self,file_path):
+    def show_image(self, file_path):
         viewer = ImageDialog(file_path)
         viewer.exec_()
 

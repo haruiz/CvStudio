@@ -8,9 +8,10 @@ from cvstudio.pyqt import QObject, Signal, QSize, QFrame, QHBoxLayout, QLabel
 class WidgetsGridPaginator(QFrame, QObject):
     paginate = Signal(int, int)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, height=40):
         super(WidgetsGridPaginator, self).__init__(parent)
         self.layout = QHBoxLayout(self)
+        self.setFixedHeight(height)
         self._page_size = 10
         self._pages_count = 0
         self._current_page = 0
@@ -45,14 +46,12 @@ class WidgetsGridPaginator(QFrame, QObject):
         self.layout.addWidget(self.btn_next)
         self.layout.addWidget(self.btn_last)
 
-
     @property
     def items_count(self):
         return self._items_count
 
     @items_count.setter
     def items_count(self, value):
-        assert value > 0, "Invalid items count parameter"
         self._items_count = value
 
     @property
@@ -61,7 +60,6 @@ class WidgetsGridPaginator(QFrame, QObject):
 
     @page_size.setter
     def page_size(self, value):
-        assert value > 0, "Invalid page size parameter"
         self._page_size = value
 
     @property
@@ -75,8 +73,12 @@ class WidgetsGridPaginator(QFrame, QObject):
 
     def bind(self):
         self._pages_count = math.ceil(self._items_count / self._page_size)
-        self.label.setText(f"Number of entries: {self._items_count}, items per page {self._page_size},  Page: {self.current_page} of {self._pages_count}  ")
+        self.label.setText(
+            f"Number of items: {self._items_count}, items per page {self._page_size},  Page: {self.current_page} of {self._pages_count}  "
+        )
         self.paginate.emit(self._current_page, self._page_size)
+        if self._items_count <= 0:
+            self.disable_actions()
 
     def disable_actions(self, flag=True):
         self.btn_first.setDisabled(flag)
@@ -89,11 +91,9 @@ class WidgetsGridPaginator(QFrame, QObject):
         self.current_page = self._current_page
         self.bind()
 
-
     def btn_last_page_click(self):
         self._current_page = self._pages_count - 1
         self.bind()
-
 
     def btn_first_page_click(self):
         self._current_page = 0

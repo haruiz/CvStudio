@@ -10,7 +10,7 @@ from cvstudio.pyqt import (
     QVBoxLayout,
     QMouseEvent,
     QFrame,
-    QWidget
+    QWidget,
 )
 
 
@@ -57,7 +57,7 @@ class ImageDialog(QDialog):
         position.setX(position.x())
         position.setY(position.y())
         self.move(position)
-        #self.setWindowOpacity(0.8)
+        # self.setWindowOpacity(0.8)
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.widget = QFrame()

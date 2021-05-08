@@ -10,10 +10,12 @@ from cvstudio.pyqt import (
     QScrollArea,
     QLabel,
     QObject,
-    QMovie
+    QMovie,
+    Signal
 )
 from cvstudio.util import GUIUtils
 from .grid_layout import WidgetsGridLayout
+from .grid_card import WidgetsGridCard
 
 
 class WidgetsGrid(QWidget, QObject):
@@ -22,12 +24,13 @@ class WidgetsGrid(QWidget, QObject):
     def __init__(self, parent=None, ncols=8):
         super(WidgetsGrid, self).__init__(parent)
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.loading_gif = None
-        self.empty_message = "Not data"
+        self.empty_widget = QLabel("Not data")
         self._is_loading = False
         self.items = []
         self.ncols = ncols
+        self.bind()
 
     @property
     def is_loading(self):
@@ -39,11 +42,14 @@ class WidgetsGrid(QWidget, QObject):
         self.bind()
 
     @abstractmethod
-    def create_widget(self, item: object) -> QWidget:
+    def build(self, item: object) -> QWidget:
         raise NotImplemented
 
-    def bind(self):
+    def clear(self):
         GUIUtils.clear_layout(self.layout)
+
+    def bind(self):
+        self.clear()
         scroll_area = QScrollArea()
         scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -67,19 +73,20 @@ class WidgetsGrid(QWidget, QObject):
                 grid_layout = WidgetsGridLayout(grid_widget)
                 grid_layout.cols = self.ncols
                 grid_layout.setAlignment(QtCore.Qt.AlignTop)
-                for curr_item in self.items:
+                for data_item in self.items:
                     item_frame = QFrame()
                     item_frame_layout = QVBoxLayout(item_frame)
                     item_frame_layout.setContentsMargins(0, 0, 0, 0)
-                    curr_widget: QWidget = self.create_widget(curr_item)
-                    item_frame_layout.addWidget(curr_widget, alignment=Qt.AlignTop)
+                    item_widget: QWidget = self.build(data_item)
+                    item_widget.setProperty("data", data_item)
+                    item_frame_layout.addWidget(item_widget, alignment=Qt.AlignTop)
                     widgets.append(item_frame)
                 grid_layout.widgets = widgets
                 scroll_area.setWidget(grid_widget)
             else:
                 center_widget = QWidget()
                 center_widget_layout = QVBoxLayout(center_widget)
-                center_widget_layout.setContentsMargins(0,0,0,0)
+                center_widget_layout.setContentsMargins(0, 0, 0, 0)
                 center_widget_layout.setAlignment(QtCore.Qt.AlignCenter)
-                center_widget_layout.addWidget(QLabel(self.empty_message))
+                center_widget_layout.addWidget(self.empty_widget)
                 scroll_area.setWidget(center_widget)

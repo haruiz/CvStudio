@@ -10,6 +10,7 @@ def gui_exception(func):
     A decorator that wraps the passed in function and logs
     exceptions should one occur
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:

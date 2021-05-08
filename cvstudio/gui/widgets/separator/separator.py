@@ -5,5 +5,5 @@ class Separator(QFrame):
     def __init__(self, parent=None):
         super(Separator, self).__init__(parent)
         self.setFrameShape(QFrame.VLine)
-        #self.setFrameShadow(QFrame.Sunken)
-        #self.setFixedHeight(30)
+        # self.setFrameShadow(QFrame.Sunken)
+        # self.setFixedHeight(30)

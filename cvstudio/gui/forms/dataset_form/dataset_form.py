@@ -1,60 +1,46 @@
 from cvstudio.pyqt import (
     QDialog,
-    QFormLayout,
-    Qt,
     QLineEdit,
-    QPlainTextEdit,
-    QtWidgets,
-    QtCore,
+    QTextEdit,
+    QFormLayout,
+    QDialogButtonBox,
+    Qt,
 )
+
 from cvstudio.util import GUIUtils
-from cvstudio.vo import DatasetVO
 
 
 class DatasetForm(QDialog):
-    def __init__(self, vo=None, parent=None):
+    def __init__(self, parent=None):
         super(DatasetForm, self).__init__(parent)
-        self.resize(341, 146)
+        self.resize(361, 218)
+
         self.setWindowTitle("New Dataset")
-        self.setWindowIcon(GUIUtils.get_icon("polygon.png"))
-        self.form_layout = QFormLayout(self)
-        self.nameLineEdit = QLineEdit()
-        self.descriptionEditText = QPlainTextEdit()
-        self.form_layout.addRow(self.tr("Name"), self.nameLineEdit)
-        self.form_layout.addRow(self.tr("Description"), self.descriptionEditText)
-        self.buttonsbox = QtWidgets.QDialogButtonBox()
-        self.buttonsbox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonsbox.setStandardButtons(
-            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok
-        )
-        self.form_layout.addWidget(self.buttonsbox)
-        self.buttonsbox.accepted.connect(self.accept)
-        self.buttonsbox.rejected.connect(self.reject)
-        self._vo = vo
-        self.initialize_form()
+        txt_name = QLineEdit()
+        txt_name.setObjectName("txt_name")
 
-    def initialize_form(self):
-        if self._vo:
-            self.nameLineEdit.setText(self._value.name)
-            self.descriptionEditText.setPlainText(self._value.description)
+        txt_description = QTextEdit()
+        txt_description.setObjectName("txt_description")
 
-    @property
-    def vo(self):
-        return self._vo
+        layout = QFormLayout(self)
+        layout.addRow(self.tr("Name:"), txt_name)
+        layout.addRow(self.tr("Description:"), txt_description)
 
-    @vo.setter
-    def vo(self, value):
-        self._vo = value
+        buttons_box = QDialogButtonBox()
+        buttons_box.setOrientation(Qt.Horizontal)
+        buttons_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        layout.addWidget(buttons_box)
+        buttons_box.accepted.connect(self.accept)
+        buttons_box.rejected.connect(self.reject)
+
+    name = GUIUtils.bind("txt_name", "text", str)
+    description = GUIUtils.bind("txt_description", "plainText", str)
 
     def accept(self) -> None:
-        if not self.nameLineEdit.text():
-            GUIUtils.show_info_message("The name field is required", "info")
+        if not self.name:
+            GUIUtils.show_error_message("The field name is required", "Info")
             return
-        if self._vo is None:
-            self.vo = DatasetVO()
-        self.vo.name = self.nameLineEdit.text()
-        self.vo.description = self.descriptionEditText.toPlainText()
-        return QDialog.accept(self)
+        return super(DatasetForm, self).accept()
 
     def reject(self) -> None:
-        return QDialog.reject(self)
+        return super(DatasetForm, self).reject()

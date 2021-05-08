@@ -6,7 +6,7 @@ class WidgetsGridLayout(QGridLayout, QObject):
     def __init__(self, parent=None):
         super(WidgetsGridLayout, self).__init__(parent)
         self._widgets = None
-        self.setContentsMargins(0,0,0,0)
+        self.setContentsMargins(0, 0, 0, 0)
         self._cols = 5
 
     @property
@@ -37,8 +37,8 @@ class WidgetsGridLayout(QGridLayout, QObject):
             col = 0
             n = max(len(self.widgets), self.cols)
             for idx in range(n):
-                #self.setColumnStretch(col, 1)
-                #self.setRowStretch(row, 1)
+                # self.setColumnStretch(col, 1)
+                # self.setRowStretch(row, 1)
                 if idx < len(self.widgets):
                     widget = self.widgets[idx]
                     self.addWidget(widget, row, col)

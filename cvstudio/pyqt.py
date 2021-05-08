@@ -1,8 +1,10 @@
 from enum import Enum
 
+
 class QT_API(Enum):
     QT_API_PYQT5 = 1
     QT_API_PYSIDE2 = 2
+
 
 QT_API_BACKEND = QT_API.QT_API_PYQT5
 if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
@@ -28,9 +30,8 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QPointF,
         QRectF,
         QRect,
-        QAbstractTableModel
-
-
+        QAbstractTableModel,
+        QVariant,
     )
     from PySide2.QtGui import (
         QFont,
@@ -56,7 +57,7 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QKeyEvent,
         QStandardItem,
         QFontMetrics,
-        qRgb
+        qRgb,
     )
 
     from PySide2.QtWidgets import (
@@ -119,7 +120,8 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QScrollArea,
         QLayout,
         QToolBar,
-        QPlainTextEdit
+        QPlainTextEdit,
+        QDialogButtonBox
     )
 else:
 
@@ -144,8 +146,8 @@ else:
         QPointF,
         QRectF,
         QRect,
-        QAbstractTableModel
-
+        QAbstractTableModel,
+        QVariant,
     )
     from PyQt5.QtGui import (
         QFont,
@@ -171,7 +173,7 @@ else:
         QKeyEvent,
         QStandardItem,
         QFontMetrics,
-        qRgb
+        qRgb,
     )
 
     from PyQt5.QtWidgets import (
@@ -234,5 +236,6 @@ else:
         QScrollArea,
         QLayout,
         QToolBar,
-        QPlainTextEdit
+        QPlainTextEdit,
+        QDialogButtonBox
     )

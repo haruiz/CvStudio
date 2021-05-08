@@ -11,6 +11,8 @@ from cvstudio.pyqt import (
     QLayout,
     QMessageBox,
     qRgb,
+    QObject,
+    QVariant,
 )
 from pathlib import Path
 
@@ -136,3 +138,18 @@ class GUIUtils:
                         QImage.Format_ARGB32,
                     )
                     return qim.copy() if copy else qim
+
+    @staticmethod
+    def bind(objectName, propertyName, propertyType):
+        def getter(self):
+            widget = self.findChild(QObject, objectName)
+            prop = widget.property(propertyName)
+            prop = QVariant(prop)
+            return propertyType(prop.value())
+
+        def setter(self, value):
+            self.findChild(QObject, objectName).setProperty(
+                propertyName, QVariant(value)
+            )
+
+        return property(getter, setter)

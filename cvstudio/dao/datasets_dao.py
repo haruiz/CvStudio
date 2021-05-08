@@ -92,9 +92,12 @@ class DatasetDao(CRUD):
 
     @db.connection_context()
     def fetch_files(self, dataset_id, page_number, items_per_page):
-        query = DatasetEntryEntity.select().where(
-            DatasetEntryEntity.dataset == dataset_id
-        ).order_by(DatasetEntryEntity.id).paginate(page_number, items_per_page)
+        query = (
+            DatasetEntryEntity.select()
+            .where(DatasetEntryEntity.dataset == dataset_id)
+            .order_by(DatasetEntryEntity.id)
+            .paginate(page_number, items_per_page)
+        )
         query_results = query.dicts().execute()
         result = []
         for ds in list(query_results):

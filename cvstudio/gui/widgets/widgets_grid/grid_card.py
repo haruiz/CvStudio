@@ -10,15 +10,16 @@ from cvstudio.pyqt import (
     QHBoxLayout,
     QPushButton,
     QWidget,
+    Signal,
+    QMouseEvent,
 )
 
 
 class WidgetsGridCard(QFrame, QObject):
-    def __init__(
-        self, parent=None, debug=False, with_actions=True, with_title=True, width=150
-    ):
+
+    def __init__(self, parent=None, debug=False, with_actions=True, with_title=True):
         super(WidgetsGridCard, self).__init__(parent)
-        self._buttons = []
+        self._card_actions = []
         self._content_layout = QVBoxLayout()
         self._content_layout.setContentsMargins(0, 0, 0, 0)
         self._content_layout.setSpacing(0)
@@ -75,7 +76,7 @@ class WidgetsGridCard(QFrame, QObject):
             self._title_frame.setFrameStyle(QFrame.Box)
             self._actions_frame.setFrameStyle(QFrame.Box)
 
-    def add_buttons(self, args: typing.Any):
+    def add_actions(self, args: typing.Union[QPushButton, list]):
         if isinstance(args, QPushButton):
             self._actions_frame.layout().addWidget(args)
         else:
@@ -97,27 +98,28 @@ class WidgetsGridCard(QFrame, QObject):
         return self._body_frame
 
     @property
-    def label(self):
+    def title(self):
         return self._title_widget
 
-    @label.setter
-    def label(self, value):
+    @title.setter
+    def title(self, value):
         self._title_widget.setText(value)
 
     @property
-    def label2(self):
+    def subtitle(self):
         return self._sub_title_widget
 
-    @label2.setter
-    def label2(self, value):
+    @subtitle.setter
+    def subtitle(self, value):
         self._sub_title_widget.setText(value)
 
     @property
-    def buttons(self):
-        return self._buttons
+    def card_actions(self):
+        return self._card_actions
 
-    @buttons.setter
-    def buttons(self, value):
-        self._buttons = value
-        for btn in self._buttons:
-            self._actions_frame.layout().addWidget(btn)
+    @card_actions.setter
+    def card_actions(self, value: dict):
+        self._card_actions = value
+        for action_btn in self._card_actions:
+            self._actions_frame.layout().addWidget(action_btn)
+

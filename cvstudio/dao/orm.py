@@ -18,7 +18,7 @@ class BaseModel(Model):
 class DatasetEntity(BaseModel):
     name = CharField()
     description = TextField()
-    #folder = TextField()
+    # folder = TextField()
     date = DateField()
 
     class Meta:
