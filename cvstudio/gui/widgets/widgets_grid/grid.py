@@ -11,11 +11,9 @@ from cvstudio.pyqt import (
     QLabel,
     QObject,
     QMovie,
-    Signal
 )
 from cvstudio.util import GUIUtils
 from .grid_layout import WidgetsGridLayout
-from .grid_card import WidgetsGridCard
 
 
 class WidgetsGrid(QWidget, QObject):
@@ -26,7 +24,7 @@ class WidgetsGrid(QWidget, QObject):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.loading_gif = None
-        self.empty_widget = QLabel("Not data")
+        self.no_data_message = "Not data"
         self._is_loading = False
         self.items = []
         self.ncols = ncols
@@ -88,5 +86,5 @@ class WidgetsGrid(QWidget, QObject):
                 center_widget_layout = QVBoxLayout(center_widget)
                 center_widget_layout.setContentsMargins(0, 0, 0, 0)
                 center_widget_layout.setAlignment(QtCore.Qt.AlignCenter)
-                center_widget_layout.addWidget(self.empty_widget)
+                center_widget_layout.addWidget(QLabel(self.no_data_message))
                 scroll_area.setWidget(center_widget)

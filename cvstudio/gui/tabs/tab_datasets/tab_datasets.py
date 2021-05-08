@@ -40,8 +40,8 @@ class DatasetTabWidget(QWidget):
         self.btn_add_new_dataset.clicked.connect(self.btn_add_new_dataset_click)
 
         self.datasets_grid = DatasetsGrid()
-        self.datasets_grid.item_action_click.connect(self.grid_card_action_click)
-        self.datasets_grid.item_double_click.connect(self.grid_card_item_double_click)
+        self.datasets_grid.item_action_click.connect(self.grid_item_action_click)
+        self.datasets_grid.item_double_click.connect(self.grid_item_double_click)
 
         self.datasets_grid_paginator = WidgetsGridPaginator()
         self.datasets_grid_paginator.paginate.connect(self.page_changed)
@@ -52,7 +52,7 @@ class DatasetTabWidget(QWidget):
         self.layout.addWidget(self.toolbox, alignment=QtCore.Qt.AlignLeft)
         self.layout.addWidget(self.datasets_grid)
         self.layout.addWidget(
-             self.datasets_grid_paginator, alignment=QtCore.Qt.AlignHCenter
+            self.datasets_grid_paginator, alignment=QtCore.Qt.AlignHCenter
         )
 
     def page_changed(self, curr_page, _):
@@ -82,6 +82,7 @@ class DatasetTabWidget(QWidget):
         worker = Worker(do_work)  # async worker
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)  # start worker
+
     #
     @gui_exception
     def load_grid(self, page_number=1):
@@ -105,7 +106,7 @@ class DatasetTabWidget(QWidget):
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)  # start worker
 
-    def grid_card_action_click(self, action_name, item: QWidget):
+    def grid_item_action_click(self, action_name, item: QWidget):
         item_id = item.property("data").id
         if action_name == "delete":
             reply = QMessageBox.question(
@@ -120,7 +121,7 @@ class DatasetTabWidget(QWidget):
                 self.load_data()
 
     @gui_exception
-    def grid_card_item_double_click(self, item: QWidget):
+    def grid_item_double_click(self, item: QWidget):
         vo = item.property("data")
         tab_widget_manager = self.window().tabs_manager
         tab_widget = MediaTabWidget(vo)
@@ -139,6 +140,6 @@ class DatasetTabWidget(QWidget):
             vo.name = form.name
             vo.description = form.description
             self.datasets_dao.save(vo)
-            curr_page = self.data_grid_paginator.current_page
+            curr_page = self.datasets_grid_paginator.current_page
             self.load_grid(curr_page)
             self.load_paginator()

@@ -2,7 +2,7 @@ import threading
 
 import typing
 
-from cvstudio.pyqt import QObject, Signal, QLabel, QtCore
+from cvstudio.pyqt import QObject, Signal, QLabel, QtCore, QMouseEvent
 
 
 class HoverThreadSignals(QObject):
@@ -36,6 +36,7 @@ class HoverThread(threading.Thread):
 
 class LabelHovered(QLabel, QObject):
     hoverTimeout = Signal(QLabel)
+    doubleClicked = Signal(QMouseEvent)
 
     def __init__(self, parent=None):
         super(LabelHovered, self).__init__(parent)
@@ -57,3 +58,6 @@ class LabelHovered(QLabel, QObject):
             self._hover_thread.join()
             del self._hover_thread
             super(LabelHovered, self).leaveEvent(evt)
+
+    def mouseDoubleClickEvent(self, evt: QMouseEvent) -> None:
+        self.doubleClicked.emit(evt)

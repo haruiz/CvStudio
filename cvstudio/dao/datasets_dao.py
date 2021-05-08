@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from peewee import IntegrityError, fn, JOIN, chunked
+
 from cvstudio.dao import CRUD, DatasetEntity, DatasetEntryEntity, db
 from cvstudio.vo import DatasetVO, DatasetEntryVO
-from datetime import datetime
 
 
 class DatasetDao(CRUD):
@@ -26,9 +28,6 @@ class DatasetDao(CRUD):
                     ds.save()
         except IntegrityError as ex:
             raise ex
-
-    def get(self, vo):
-        pass
 
     def fetch_all(self):
         cursor = DatasetEntity.select().dicts().execute()
@@ -106,3 +105,8 @@ class DatasetDao(CRUD):
             for k, v in ds.items():
                 setattr(vo, k, v)
         return result
+
+    @db.connection_context()
+    def delete_entry(self, entry_id):
+        return DatasetEntryEntity.delete_by_id(entry_id)
+

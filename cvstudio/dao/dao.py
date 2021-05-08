@@ -11,10 +11,6 @@ class CRUD(metaclass=ABCMeta):
     def save(self, vo):
         raise NotImplemented
 
-    @abstractmethod
-    @db.connection_context()
-    def get(self, vo):
-        raise NotImplemented
 
     @abstractmethod
     @db.connection_context()

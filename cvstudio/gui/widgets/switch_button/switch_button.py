@@ -1,4 +1,3 @@
-
 from cvstudio.gui.widgets import ImageButton
 from cvstudio.pyqt import (
     QtCore,

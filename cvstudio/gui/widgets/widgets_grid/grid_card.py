@@ -16,7 +16,6 @@ from cvstudio.pyqt import (
 
 
 class WidgetsGridCard(QFrame, QObject):
-
     def __init__(self, parent=None, debug=False, with_actions=True, with_title=True):
         super(WidgetsGridCard, self).__init__(parent)
         self._card_actions = []
@@ -122,4 +121,3 @@ class WidgetsGridCard(QFrame, QObject):
         self._card_actions = value
         for action_btn in self._card_actions:
             self._actions_frame.layout().addWidget(action_btn)
-

@@ -121,7 +121,7 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QLayout,
         QToolBar,
         QPlainTextEdit,
-        QDialogButtonBox
+        QDialogButtonBox,
     )
 else:
 
@@ -237,5 +237,5 @@ else:
         QLayout,
         QToolBar,
         QPlainTextEdit,
-        QDialogButtonBox
+        QDialogButtonBox,
     )

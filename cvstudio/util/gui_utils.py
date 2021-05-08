@@ -18,17 +18,15 @@ from pathlib import Path
 
 
 class GUIUtils:
-    @staticmethod
-    def get_icon(asset_file_name: str) -> QIcon:
+    @classmethod
+    def get_icon(cls, img: str) -> QIcon:
         """
         create an icon instance based on the asset file name
         :rtype: QIcon instance
         """
-        assets_folder = Path(__file__).parents[1].joinpath("assets")
-        app = QApplication.instance()
-        curr_theme = app.property("theme")
-        asset_path = assets_folder.joinpath(f"{curr_theme}/icons/{asset_file_name}")
-        return QIcon(str(asset_path))
+        assets_folder = cls.get_assets_path()
+        img_path = assets_folder.joinpath(f"icons/{img}")
+        return QIcon(str(img_path))
 
     @staticmethod
     def get_assets_path() -> Path:
@@ -41,6 +39,12 @@ class GUIUtils:
         curr_theme = app.property("theme")
         asset_path = assets_folder.joinpath(f"{curr_theme}")
         return asset_path
+
+    @classmethod
+    def get_image(cls, img):
+        assets_folder = cls.get_assets_path()
+        img_path = assets_folder.joinpath(f"icons/{img}")
+        return QPixmap(str(img_path))
 
     @classmethod
     def icon_color2gray(cls, icon: QIcon) -> QIcon:
