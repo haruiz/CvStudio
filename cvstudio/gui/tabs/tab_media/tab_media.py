@@ -12,6 +12,7 @@ from cvstudio.gui.tabs.tab_media.media_grid_item import MediaDataGridItem
 from cvstudio.gui.widgets import (
     ImageButton,
 )
+from cvstudio.gui.widgets.image_viewer import ImageViewer
 from cvstudio.gui.widgets.widgets_grid import WidgetsGridPaginator
 from cvstudio.pyqt import (
     QtCore,
@@ -22,6 +23,7 @@ from cvstudio.pyqt import (
     QWidget,
     QPixmap,
     QMessageBox,
+    QTabWidget,
 )
 from cvstudio.util import GUIUtils, Worker
 from cvstudio.vo import DatasetVO, DatasetEntryVO
@@ -99,7 +101,7 @@ class MediaTabWidget(QWidget):
 
         @work_exception
         def do_work():
-            results = self.datasets_dao.fetch_files(
+            results = self.datasets_dao.fetch_files_by_page(
                 self.dataset_vo.id, page_number, self.ITEMS_PER_PAGE
             )
 
@@ -185,8 +187,19 @@ class MediaTabWidget(QWidget):
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
 
+    def open_file(self, image_entry):
+        tab_widget_manager = self.window().tabs_manager
+        tab_widget = ImageViewer(image_entry)
+        image_path = image_entry.file_path
+        tab_widget.image = Image.open(image_path)
+        self.window().close_tab_by_type(ImageViewer)
+        img_name = Path(image_entry.file_path).name
+        index = tab_widget_manager.addTab(tab_widget, img_name)
+        tab_widget_manager.setCurrentIndex(index)
+
     def grid_card_double_click(self, item: QWidget):
-        print(item.property("data"))
+        image_entry = item.property("data").data_item
+        self.open_file(image_entry)
 
     def grid_item_action_click(self, action_name, item):
         item = item.property("data").data_item

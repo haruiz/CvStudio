@@ -32,8 +32,12 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QRect,
         QAbstractTableModel,
         QVariant,
+        QEvent,
+        QRegExp,
+        QLineF,
     )
     from PySide2.QtGui import (
+        QRegExpValidator,
         QFont,
         QPalette,
         QColor,
@@ -58,10 +62,17 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QStandardItem,
         QFontMetrics,
         qRgb,
+        QStandardItemModel,
     )
 
     from PySide2.QtWidgets import (
+        QTableWidgetItem,
+        QCompleter,
+        QGraphicsObject,
+        QButtonGroup,
+        QHeaderView,
         QMainWindow,
+        QMenuBar,
         QVBoxLayout,
         QRubberBand,
         QApplication,
@@ -122,6 +133,12 @@ if QT_API_BACKEND == QT_API.QT_API_PYSIDE2:
         QToolBar,
         QPlainTextEdit,
         QDialogButtonBox,
+        QGraphicsItem,
+        QAbstractGraphicsShapeItem,
+        QGraphicsSceneHoverEvent,
+        QGraphicsSceneContextMenuEvent,
+        QStyleOptionViewItem,
+        QColorDialog,
     )
 else:
 
@@ -132,6 +149,7 @@ else:
         QTextStream,
         QDir,
         QItemSelection,
+        QEvent,
         QThreadPool,
         QSize,
         pyqtSignal as Signal,
@@ -148,6 +166,8 @@ else:
         QRect,
         QAbstractTableModel,
         QVariant,
+        QRegExp,
+        QLineF,
     )
     from PyQt5.QtGui import (
         QFont,
@@ -174,10 +194,16 @@ else:
         QStandardItem,
         QFontMetrics,
         qRgb,
+        QRegExpValidator,
+        QStandardItemModel,
     )
 
     from PyQt5.QtWidgets import (
+        QTableWidgetItem,
+        QButtonGroup,
+        QHeaderView,
         QMainWindow,
+        QMenuBar,
         QVBoxLayout,
         QRubberBand,
         QApplication,
@@ -238,4 +264,12 @@ else:
         QToolBar,
         QPlainTextEdit,
         QDialogButtonBox,
+        QGraphicsObject,
+        QCompleter,
+        QGraphicsItem,
+        QAbstractGraphicsShapeItem,
+        QGraphicsSceneHoverEvent,
+        QGraphicsSceneContextMenuEvent,
+        QStyleOptionViewItem,
+        QColorDialog,
     )

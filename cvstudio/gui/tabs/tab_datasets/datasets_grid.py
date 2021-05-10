@@ -16,7 +16,7 @@ class DatasetsGrid(WidgetsGrid, QObject):
         card = WidgetsGridCard(debug=False)
         icon_file = "folder_empty.png"
         icon = GUIUtils.get_icon(icon_file)
-        card.body = ImageButton(icon)
+        card.body = ImageButton(icon, size=QSize(100, 100))
         card.title = f"{data_item.name}"
         card.tag = data_item
         label_size = (

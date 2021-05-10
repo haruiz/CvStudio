@@ -90,7 +90,7 @@ class DatasetTabWidget(QWidget):
 
         @work_exception
         def do_work():
-            results = self.datasets_dao.fetch(page_number, self.ITEMS_PER_PAGE)
+            results = self.datasets_dao.fetch_all_with_size(page_number, self.ITEMS_PER_PAGE)
             return results, None
 
         @gui_exception
@@ -131,7 +131,6 @@ class DatasetTabWidget(QWidget):
         index = tab_widget_manager.addTab(tab_widget, vo.name)
         tab_widget_manager.setCurrentIndex(index)
 
-    #
     @gui_exception
     def btn_add_new_dataset_click(self, _):
         form = DatasetForm()

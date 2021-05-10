@@ -1,4 +1,4 @@
-class AnnotaVO:
+class AnnVO:
     def __init__(self):
         self._entry = None
         self._label = None
