@@ -63,7 +63,6 @@ class MediaTabWidget(QWidget):
         )
         self.datasets_dao = DatasetDao()
         self.dataset_vo = dataset_vo
-
         self.load_data()
 
     def load_data(self):
@@ -213,5 +212,5 @@ class MediaTabWidget(QWidget):
                 QMessageBox.No,
             )
             if reply == QMessageBox.Yes:
-                self.datasets_dao.delete_entry(item_id)
+                self.datasets_dao.delete_file(item_id)
                 self.load_data()

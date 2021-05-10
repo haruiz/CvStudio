@@ -23,12 +23,24 @@ class ImageViewer(QWidget):
         super(ImageViewer, self).__init__(*args, **kwargs)
         self.layout = QVBoxLayout(self)
 
+        size_policy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
         self.ann_toolbox = ImageViewerToolBox()
         self.ann_toolbox.onAction.connect(self.current_tool_changed)
         self.ann_toolbox.setFixedWidth(50)
+        self.ann_toolbox.setSizePolicy(size_policy)
+
+        size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        size_policy.setHorizontalStretch(4)
+        size_policy.setVerticalStretch(0)
         self.img_viewer = ImageGraphicsView()
+        self.img_viewer.setSizePolicy(size_policy)
+
+        size_policy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+        size_policy.setHorizontalStretch(1)
+        size_policy.setVerticalStretch(0)
         self.vsplitter = QSplitter(Qt.Vertical)
-        self.vsplitter.setFixedWidth(300)
+        self.vsplitter.setMinimumWidth(300)
+        self.vsplitter.setSizePolicy(size_policy)
 
         hsplitter = QSplitter(Qt.Horizontal)
         hsplitter.addWidget(self.ann_toolbox)
@@ -36,26 +48,22 @@ class ImageViewer(QWidget):
         hsplitter.addWidget(self.vsplitter)
         self.layout.addWidget(hsplitter)
 
-        size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        size_policy.setVerticalStretch(1)
-
         self._loading_dialog = LoadingDialog()
         self.labels_table = LabelsTable()
 
         tab_manager = QTabWidget()
         tab_manager.addTab(self.labels_table, "Labels")
         tab_manager.addTab(QWidget(), "Models Hub")
-        tab_manager.setFixedHeight(400)
-        tab_manager.setSizePolicy(size_policy)
         self.vsplitter.addWidget(tab_manager)
 
         toolbox = QToolBox()
         toolbox.addItem(QWidget(), "Images")
         toolbox.addItem(QWidget(), "Processing")
-        toolbox.setSizePolicy(size_policy)
         self.vsplitter.addWidget(toolbox)
-        self.vsplitter.setStretchFactor(0, 1)
-        self.vsplitter.setStretchFactor(1, 1)
+
+        #self.vsplitter.setStretchFactor(0, 1)
+        #self.vsplitter.setStretchFactor(1, 1)
+        self.vsplitter.setSizes([1,1])
 
         self._ds_dao = DatasetDao()
         self._labels_dao = LabelDao()
@@ -118,7 +126,7 @@ class ImageViewer(QWidget):
                 pass
 
 
-        self._loading_dialog.show()
+        #self._loading_dialog.show()
         worker = Worker(do_work)
         worker.signals.result.connect(done_work)
         self._thread_pool.start(worker)
