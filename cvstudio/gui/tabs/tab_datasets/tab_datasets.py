@@ -90,7 +90,9 @@ class DatasetTabWidget(QWidget):
 
         @work_exception
         def do_work():
-            results = self.datasets_dao.fetch_all_with_size(page_number, self.ITEMS_PER_PAGE)
+            results = self.datasets_dao.fetch_all_with_size(
+                page_number, self.ITEMS_PER_PAGE
+            )
             return results, None
 
         @gui_exception

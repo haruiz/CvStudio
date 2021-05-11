@@ -1,7 +1,7 @@
 import dask
 
 from cvstudio.dao import DatasetDao, LabelDao, AnnDao
-from cvstudio.gui.widgets import LabelsTable, LoadingDialog
+from cvstudio.gui.widgets import DatasetLabelsTable, LoadingDialog
 from cvstudio.pyqt import (
     QWidget,
     QSplitter,
@@ -17,6 +17,7 @@ from .image_viewer_toolbox import ImageViewerToolBox
 from .selection_tool import SELECTION_TOOL
 from cvstudio.decor import gui_exception, work_exception
 from cvstudio.util import Worker
+
 
 class ImageViewer(QWidget):
     def __init__(self, image_entry, *args, **kwargs):
@@ -48,11 +49,12 @@ class ImageViewer(QWidget):
         hsplitter.addWidget(self.vsplitter)
         self.layout.addWidget(hsplitter)
 
+        dataset_id = image_entry.dataset
         self._loading_dialog = LoadingDialog()
-        self.labels_table = LabelsTable()
+        self._ds_labels_table = DatasetLabelsTable(dataset_id)
 
         tab_manager = QTabWidget()
-        tab_manager.addTab(self.labels_table, "Labels")
+        tab_manager.addTab(self._ds_labels_table, "Labels")
         tab_manager.addTab(QWidget(), "Models Hub")
         self.vsplitter.addWidget(tab_manager)
 
@@ -61,16 +63,15 @@ class ImageViewer(QWidget):
         toolbox.addItem(QWidget(), "Processing")
         self.vsplitter.addWidget(toolbox)
 
-        #self.vsplitter.setStretchFactor(0, 1)
-        #self.vsplitter.setStretchFactor(1, 1)
-        self.vsplitter.setSizes([1,1])
+        # self.vsplitter.setStretchFactor(0, 1)
+        # self.vsplitter.setStretchFactor(1, 1)
+        self.vsplitter.setSizes([1, 1])
 
         self._ds_dao = DatasetDao()
         self._labels_dao = LabelDao()
         self._ann_dao = AnnDao()
         self._thread_pool = QThreadPool()
         self._image_entry = image_entry
-        self.init()
 
     @property
     def image_entry(self):
@@ -99,34 +100,3 @@ class ImageViewer(QWidget):
         }
         if action_tag in tools_dict:
             self.image_viewer.current_tool = tools_dict[action_tag]
-
-    @dask.delayed
-    def load_labels(self):
-        dataset_id = self.image_entry.dataset
-        return self._labels_dao.fetch_all(dataset_id)
-
-    @dask.delayed
-    def load_images(self):
-        dataset_id = self.image_entry.dataset
-        return self._ds_dao.fetch_files_by_page(dataset_id)
-
-    @gui_exception
-    def init(self):
-
-        @work_exception
-        def do_work():
-            return dask.compute(*[
-                self.load_labels()
-            ]), None
-
-        @gui_exception
-        def done_work(args):
-            result, error = args
-            if result:
-                pass
-
-
-        #self._loading_dialog.show()
-        worker = Worker(do_work)
-        worker.signals.result.connect(done_work)
-        self._thread_pool.start(worker)

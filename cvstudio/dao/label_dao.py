@@ -12,7 +12,6 @@ class LabelDao:
             name=vo.name.title(), color=vo.color, dataset=vo.dataset
         )
         vo.id = label.get_id()
-
         return vo
 
     @db.connection_context()

@@ -14,7 +14,8 @@ class DatasetForm(QDialog):
     def __init__(self, parent=None):
         super(DatasetForm, self).__init__(parent)
         self.resize(361, 218)
-
+        window_icon = GUIUtils.get_icon("polygon.png")
+        self.setWindowIcon(window_icon)
         self.setWindowTitle("New Dataset")
         txt_name = QLineEdit()
         txt_name.setObjectName("txt_name")
@@ -38,7 +39,7 @@ class DatasetForm(QDialog):
 
     def accept(self) -> None:
         if not self.name:
-            GUIUtils.show_error_message("The field name is required", "Info")
+            GUIUtils.show_error_message("Field name is required", "Info")
             return
         return super(DatasetForm, self).accept()
 

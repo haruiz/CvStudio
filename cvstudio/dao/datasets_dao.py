@@ -47,9 +47,7 @@ class DatasetDao:
 
     @db.connection_context()
     def fetch_all_by_id(self, ds_id):
-        query = DatasetEntryEntity \
-            .select() \
-            .where(DatasetEntryEntity.dataset == ds_id)
+        query = DatasetEntryEntity.select().where(DatasetEntryEntity.dataset == ds_id)
         cursor = query.dicts().execute()
         result = []
         for ds in list(cursor):
@@ -74,7 +72,7 @@ class DatasetDao:
             .group_by(ds.id)
             .order_by(ds.id)
             .paginate(page_number, items_per_page)
-                .dicts()
+            .dicts()
         )
         query_results = query.execute()
         result = []
@@ -131,8 +129,7 @@ class DatasetDao:
     @db.connection_context()
     def fetch_all_files(self, ds_id):
         query = (
-            DatasetEntryEntity
-            .select()
+            DatasetEntryEntity.select()
             .where(DatasetEntryEntity.dataset == ds_id)
             .dicts()
         )
@@ -148,4 +145,3 @@ class DatasetDao:
     @db.connection_context()
     def delete_file(self, entry_id):
         return DatasetEntryEntity.delete_by_id(entry_id)
-

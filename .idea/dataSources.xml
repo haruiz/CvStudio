@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="studio" uuid="1f830ffe-c7ec-4ef5-80e2-9864754dbd67">
+    <data-source source="LOCAL" name="studio" uuid="ca5afb58-cb28-4080-ad08-2d6d6918daa9">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/cvstudio/studio.db</jdbc-url>
-    </data-source>
-    <data-source source="LOCAL" name="studio [2]" uuid="fef196ff-ca12-4160-a2ae-0476978268cb">
-      <driver-ref>sqlite.xerial</driver-ref>
-      <synchronize>true</synchronize>
-      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/cvstudio/dao/studio.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:D:\workspace\CvStudio\cvstudio\studio.db</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
       <libraries>
         <library>
-          <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/Xerial SQLiteJDBC/3.31.1/sqlite-jdbc-3.31.1.jar</url>
+          <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/Xerial SQLiteJDBC/3.25.1/sqlite-jdbc-3.25.1.jar</url>
+        </library>
+        <library>
+          <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/Xerial SQLiteJDBC/3.25.1/license.txt</url>
+        </library>
+        <library>
+          <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/Xerial SQLiteJDBC/3.25.1/sqlite-jdbc-3.25.1.jar</url>
         </library>
       </libraries>
     </data-source>
