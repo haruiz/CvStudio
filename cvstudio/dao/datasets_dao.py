@@ -109,7 +109,7 @@ class DatasetDao:
         )
 
     @db.connection_context()
-    def fetch_files_by_page(self, dataset_id, page_number, items_per_page):
+    def fetch_files_by_ds_with_pagination(self, dataset_id, page_number, items_per_page):
         query = (
             DatasetEntryEntity.select()
             .where(DatasetEntryEntity.dataset == dataset_id)
@@ -127,7 +127,7 @@ class DatasetDao:
         return result
 
     @db.connection_context()
-    def fetch_all_files(self, ds_id):
+    def fetch_files_by_ds(self, ds_id):
         query = (
             DatasetEntryEntity.select()
             .where(DatasetEntryEntity.dataset == ds_id)

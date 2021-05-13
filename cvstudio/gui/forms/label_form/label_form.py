@@ -11,7 +11,7 @@ from cvstudio.pyqt import (
     QWidget,
     QHBoxLayout,
     QColor,
-    Property
+    Property,
 )
 
 from cvstudio.util import GUIUtils
@@ -36,18 +36,20 @@ class QColorEditWidget(QWidget):
         return self._color
 
     def pick_color(self, evt: QMouseEvent) -> None:
-        color = QColorDialog.getColor()
+        color = QColorDialog.getColor(
+            options=QColorDialog.DontUseNativeDialog | QColorDialog.ShowAlphaChannel
+        )
         if color.isValid():
             color_name = color.name()
             self.txt_color.setText(color_name)
-            self.setStyleSheet(f'background-color: {color_name};')
+            self.setStyleSheet(f"background-color: {color_name};")
             self._color = color
 
 
 class LabelForm(QDialog):
     def __init__(self, parent=None):
         super(LabelForm, self).__init__(parent)
-        #self.resize(361, 150)
+        # self.resize(361, 150)
         window_icon = GUIUtils.get_icon("polygon.png")
         self.setWindowIcon(window_icon)
         self.setWindowTitle("New Label")

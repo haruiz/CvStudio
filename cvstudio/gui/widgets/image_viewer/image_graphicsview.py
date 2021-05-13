@@ -61,8 +61,10 @@ class ImageGraphicsView(QGraphicsView):
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        #self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        #self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setRenderHints(
             QPainter.Antialiasing
             | QPainter.SmoothPixmapTransform
@@ -213,7 +215,7 @@ class ImageGraphicsView(QGraphicsView):
             y += self.grid_size_huge
         painter.drawLines(grid_lines)
 
-        self.draw_guide_numbers(left, painter, rect, top)
+        #self.draw_guide_numbers(left, painter, rect, top)
 
     def draw_guide_numbers(self, left, painter, rect, top):
         # draw numbers
@@ -238,25 +240,33 @@ class ImageGraphicsView(QGraphicsView):
                 painter.setPen(QPen(self.canvas_grid_color_darker.lighter(300)))
                 painter.drawText(x, rect.top() + painter.font().pointSize(), str(intx))
 
+    def fit_image(self):
+        self.resetTransform()
+        self.centerOn(
+            QPointF(self.sceneRect().width() / 2, self.sceneRect().height() / 2)
+        )
+
     @gui_exception
-    def update_viewer(self, fit_image=True):
+    def update_viewer(self, center_image=True):
         qpixmap_image = self.image.toqpixmap()
         x, y = -qpixmap_image.width() / 2, -qpixmap_image.height() / 2
         if self._pixmap:
-            pass
+            self._pixmap.setPixmap(qpixmap_image)
         else:
             self._pixmap = ImagePixmap()
             self._pixmap.setPixmap(qpixmap_image)
-            self._pixmap.setOffset(x, y)
             self._scene.addItem(self._pixmap)
             self._pixmap.signals.hoverEnterEventSgn.connect(self.pixmap_hoverEnterEvent)
             self._pixmap.signals.hoverLeaveEventSgn.connect(self.pixmap_hoverLeaveEvent)
             self._pixmap.signals.hoverMoveEventSgn.connect(self.pixmap_hoverMoveEvent)
-        if fit_image:
-            self.resetTransform()
+        self._pixmap.setOffset(x, y)
+        self.resetTransform()
+        self.reset_scale()
+        if center_image:
             self.centerOn(
-                QPointF(self.sceneRect().width() / 2, self.sceneRect().height() / 2)
+                QPointF(self.sceneRect().width() / 2, 0)
             )
+
 
     def _show_guide_lines(self):
         if self.hline and self.vline:

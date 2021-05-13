@@ -100,7 +100,7 @@ class MediaTabWidget(QWidget):
 
         @work_exception
         def do_work():
-            results = self.datasets_dao.fetch_files_by_page(
+            results = self.datasets_dao.fetch_files_by_ds_with_pagination(
                 self.dataset_vo.id, page_number, self.ITEMS_PER_PAGE
             )
 

@@ -27,7 +27,7 @@ from cvstudio.pyqt import (
     QColorDialog,
     QThreadPool,
     QDialog,
-    QMessageBox
+    QMessageBox,
 )
 from cvstudio.util import GUIUtils, Worker
 
@@ -173,14 +173,15 @@ class DatasetLabelsTable(QTableView, QObject):
                 color_vo = self._labels_dao.save(color_vo)
                 self.add_row(color_vo.id, color_vo.name, color_vo.color)
         elif clicked_action == delete_label_action:
-            reply = QMessageBox.question(self, 'Delete Label',
-                                         "Are you sure?",
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self,
+                "Delete Label",
+                "Are you sure?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
             if reply == QMessageBox.Yes:
                 label_id = self._model.index(index.row(), 2).data()
                 self._labels_dao.delete(label_id)
                 self._model.removeRow(index.row())
                 # TODO: Delete annotation for this label
-
-
-

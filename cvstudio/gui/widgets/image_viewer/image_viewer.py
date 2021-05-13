@@ -1,7 +1,7 @@
-import dask
+from PIL import Image
 
 from cvstudio.dao import DatasetDao, LabelDao, AnnDao
-from cvstudio.gui.widgets import DatasetLabelsTable, LoadingDialog
+from cvstudio.gui.widgets import DatasetLabelsTable, LoadingDialog, ImageListWidget
 from cvstudio.pyqt import (
     QWidget,
     QSplitter,
@@ -11,13 +11,14 @@ from cvstudio.pyqt import (
     QToolBox,
     QSizePolicy,
     QThreadPool,
+    QtGui,
+    Qt,
+    QListWidgetItem
 )
 from .image_graphicsview import ImageGraphicsView
 from .image_viewer_toolbox import ImageViewerToolBox
 from .selection_tool import SELECTION_TOOL
 from cvstudio.decor import gui_exception, work_exception
-from cvstudio.util import Worker
-
 
 class ImageViewer(QWidget):
     def __init__(self, image_entry, *args, **kwargs):
@@ -52,15 +53,17 @@ class ImageViewer(QWidget):
         dataset_id = image_entry.dataset
         self._loading_dialog = LoadingDialog()
         self._ds_labels_table = DatasetLabelsTable(dataset_id)
+        self._image_list_widget = ImageListWidget(image_entry)
+        self._image_list_widget.currentItemChanged.connect(self.image_list_selection_changed)
 
         tab_manager = QTabWidget()
         tab_manager.addTab(self._ds_labels_table, "Labels")
-        tab_manager.addTab(QWidget(), "Models Hub")
+        # tab_manager.addTab(QWidget(), "Models Hub")
         self.vsplitter.addWidget(tab_manager)
 
         toolbox = QToolBox()
-        toolbox.addItem(QWidget(), "Images")
-        toolbox.addItem(QWidget(), "Processing")
+        toolbox.addItem(self._image_list_widget, "Images")
+        # toolbox.addItem(QWidget(), "Processing")
         self.vsplitter.addWidget(toolbox)
 
         # self.vsplitter.setStretchFactor(0, 1)
@@ -100,3 +103,27 @@ class ImageViewer(QWidget):
         }
         if action_tag in tools_dict:
             self.image_viewer.current_tool = tools_dict[action_tag]
+
+
+    @gui_exception
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        row = self._image_list_widget.currentRow()
+        last_index = self._image_list_widget.count() - 1
+        if event.key() == Qt.Key_A:
+            if row > 0:
+                self._image_list_widget.setCurrentRow(row - 1)
+            else:
+                self._image_list_widget.setCurrentRow(last_index)
+        elif event.key() == Qt.Key_D:
+            if row < last_index:
+                self._image_list_widget.setCurrentRow(row + 1)
+            else:
+                self._image_list_widget.setCurrentRow(0)
+                
+        super(ImageViewer, self).keyPressEvent(event)
+
+    @gui_exception
+    def image_list_selection_changed(self, selected_item: QListWidgetItem, prev):
+        curr_image_entry = selected_item.data(Qt.UserRole)
+        if self._image_entry.id != curr_image_entry.id:
+            self.image = Image.open(curr_image_entry.file_path)
