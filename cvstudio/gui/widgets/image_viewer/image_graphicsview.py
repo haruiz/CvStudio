@@ -113,7 +113,6 @@ class ImageGraphicsView(QGraphicsView):
     @image.setter
     def image(self, value):
         self._image = value
-        self.update_viewer()
 
     @property
     def current_tool(self):
@@ -266,7 +265,6 @@ class ImageGraphicsView(QGraphicsView):
             self.centerOn(
                 QPointF(self.sceneRect().width() / 2, 0)
             )
-
 
     def _show_guide_lines(self):
         if self.hline and self.vline:

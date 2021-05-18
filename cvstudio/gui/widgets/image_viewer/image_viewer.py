@@ -38,8 +38,6 @@ class ImageViewer(QWidget):
         self.img_viewer.setSizePolicy(size_policy)
 
         size_policy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-        size_policy.setHorizontalStretch(1)
-        size_policy.setVerticalStretch(0)
         self.vsplitter = QSplitter(Qt.Vertical)
         self.vsplitter.setMinimumWidth(300)
         self.vsplitter.setSizePolicy(size_policy)
@@ -68,7 +66,7 @@ class ImageViewer(QWidget):
 
         # self.vsplitter.setStretchFactor(0, 1)
         # self.vsplitter.setStretchFactor(1, 1)
-        self.vsplitter.setSizes([1, 1])
+        #self.vsplitter.setSizes([1, 1])
 
         self._ds_dao = DatasetDao()
         self._labels_dao = LabelDao()
@@ -102,7 +100,7 @@ class ImageViewer(QWidget):
             "pointer": SELECTION_TOOL.POINTER,
         }
         if action_tag in tools_dict:
-            self.image_viewer.current_tool = tools_dict[action_tag]
+            self.img_viewer.current_tool = tools_dict[action_tag]
 
 
     @gui_exception
@@ -125,5 +123,5 @@ class ImageViewer(QWidget):
     @gui_exception
     def image_list_selection_changed(self, selected_item: QListWidgetItem, prev):
         curr_image_entry = selected_item.data(Qt.UserRole)
-        if self._image_entry.id != curr_image_entry.id:
-            self.image = Image.open(curr_image_entry.file_path)
+        self.image = Image.open(curr_image_entry.file_path)
+        self.img_viewer.update_viewer()
